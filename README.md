@@ -1,10 +1,44 @@
-# Probability System Documentation
+# Bayesian Network Calcultor
 
 ## 1. Overview
 
+This script helps with the definition and calculations with Bayesian networks. 
+
+ - The calculator implements a Bayesian contingency table system that enables users to compute various types of probabilities and statistical independence tests in addition to some information theorethical calculations.
+ - It allows easy definition of network from either JPT and CPT tables.  
+ - It allows the usage of standard mathematical notation when doing calculations (see below). 
+ - It included are a number of pre-defined bayesian network common in literature as illustrations of various property of BN.
+
+
 ### Function and Usage
 
-The `probs.py` script is a comprehensive probabilistic statistics calculator designed for working with boolean random variables and their joint probability distributions. It implements a Bayesian contingency table system that enables users to compute various types of probabilities and perform statistical independence tests.
+The main entry point is `probs.py` and the easiest way to start using the calculator and one of the supplied examples is by entering:
+
+
+```shell
+> python probs.py inputs/medical_test.inp 
+Successfully loaded probability system from file: inputs/medical_test.inp
+Using variable names: Sickness, Test
+
+Joint Probability Table:
+========================
+
+Sickness | Test | Probability
+-----------------------------
+0 | 0 | 0.930600
+0 | 1 | 0.059400
+1 | 0 | 0.000500
+1 | 1 | 0.009500
+
+Tab completion enabled. Type the first few letters of a variable name and press Tab to complete it.
+
+Example Queries:
+Examples: P(Sickness), P(Sickness,Test), P(Sickness|Test)
+          IsIndep(Sickness,Test)
+Type 'help' to see available commands, 'quit' (or 'exit') to exit.
+
+Query: 
+```
 
 The input data can either be specified interactively (which is tedious) or read from a file that can either have the format of a joint probability table (possible sparse) or as a number of conditional probability tables which specifies a Bayesian network. The Bayesian network format is often the simplest way to specify larger networks
 as it allows the sanme data to be specified in a more conscise format. The precise format is described in later sections in this document. Internally both input methods will establish a complete joint distribution table of size 2^N where N is the number of variables.
