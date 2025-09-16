@@ -8,6 +8,5 @@ __pycache__/
 env/
 dist/
 bayescalc.egg-info/
-
-
+.pytest_cache/
 
