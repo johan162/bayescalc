@@ -1,0 +1,37 @@
+# Sprinkler Network (classic 4-variable BN)
+# Structure: Cloudy -> {Sprinkler, Rain}; {Sprinkler, Rain} -> WetGrass
+# Demonstrates converging connections and explaining patterns of conditional independence:
+#   - Sprinkler ⟂ Rain | Cloudy
+#   - Sprinkler and Rain become (slightly) dependent when conditioning on WetGrass (a collider)
+# Probabilities from the widely-used example (rounded to typical textbook values):
+# P(Cloudy) = 0.5
+# P(Sprinkler=1 | Cloudy=1) = 0.1 ; P(Sprinkler=1 | Cloudy=0) = 0.5
+# P(Rain=1 | Cloudy=1) = 0.8 ; P(Rain=1 | Cloudy=0) = 0.2
+# P(WetGrass=1 | Sprinkler, Rain):
+#   S R : P(W=1)
+#   1 1 : 0.99
+#   1 0 : 0.90
+#   0 1 : 0.90
+#   0 0 : 0.00
+# File format:
+#   variables: in topological order
+#   For each variable: either "Var : None" with prior, or "Var: Parents" with CPT entries.
+
+variables: Cloudy, Sprinkler, Rain, WetGrass
+
+Cloudy: None
+1: 0.5  # P(Cloudy=1)
+
+Sprinkler: Cloudy
+1: 0.1   # P(S=1|C=1)
+0: 0.5   # P(S=1|C=0)
+
+Rain: Cloudy
+1: 0.8   # P(R=1|C=1)
+0: 0.2   # P(R=1|C=0)
+
+WetGrass: Sprinkler, Rain
+11: 0.99  # P(W=1|S=1,R=1)
+10: 0.90  # P(W=1|S=1,R=0)
+01: 0.90  # P(W=1|S=0,R=1)
+00: 0.00  # P(W=1|S=0,R=0)

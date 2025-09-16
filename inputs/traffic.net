@@ -1,0 +1,38 @@
+# Traffic Network (5-variable causal BN)
+# Structure:
+#   RushHour -> {Accident, Traffic}
+#   Accident -> Traffic
+#   Traffic -> Late
+# Illustrates: converging influences on Traffic (a v-structure at Traffic if we had another parent),
+# and sequential causal propagation to Late. RushHour and Accident become dependent when
+# conditioning on Traffic (a collider-like induced dependence if an additional parent existed).
+# Probabilities (illustrative, not from a canonical dataset):
+# P(RushHour=1)=0.6
+# P(Accident=1|RushHour): RH=1 -> 0.05, RH=0 -> 0.01
+# P(Traffic=1|RushHour,Accident):
+#   RH A : P(T=1)
+#   1  1 : 0.95
+#   1  0 : 0.70
+#   0  1 : 0.90
+#   0  0 : 0.20
+# P(Late=1|Traffic): T=1 -> 0.8, T=0 -> 0.1
+# All variables binary with 1 representing the "positive" / named condition.
+
+variables: RushHour, Accident, Traffic, Late
+
+RushHour: None
+1: 0.6
+
+Accident: RushHour
+1: 0.05  # P(A=1|RH=1)
+0: 0.01  # P(A=1|RH=0)
+
+Traffic: RushHour, Accident
+11: 0.95  # P(T=1|RH=1,A=1)
+10: 0.70  # P(T=1|RH=1,A=0)
+01: 0.90  # P(T=1|RH=0,A=1)
+00: 0.20  # P(T=1|RH=0,A=0)
+
+Late: Traffic
+1: 0.8   # P(L=1|T=1)
+0: 0.1   # P(L=1|T=0)

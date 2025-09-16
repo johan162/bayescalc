@@ -1,0 +1,27 @@
+# 5-Variable Parity Example
+# Variables: X1, X2, X3, X4, Parity
+# Parity = X1 XOR X2 XOR X3 XOR X4 (deterministic). Distribution uniform over the 16 assignments of X1..X4.
+# Interesting because: Any proper subset of the first four variables is independent of Parity when fewer than 4 bits
+# are known, but the full set determines it. Illustrates higher-order dependence and why low-order statistics
+# can miss structure (common in error-correcting codes / parity check examples).
+# Watch out: Pairwise (and even triple-wise) independence does not guarantee independence once all variables are considered.
+variables: X1, X2, X3, X4, Parity
+# Each base assignment has probability 1/16 = 0.0625.
+00000: 0.0625
+00011: 0.0625
+00101: 0.0625
+00110: 0.0625
+01001: 0.0625
+01010: 0.0625
+01100: 0.0625
+01111: 0.0625
+10001: 0.0625
+10010: 0.0625
+10100: 0.0625
+10111: 0.0625
+11000: 0.0625
+11011: 0.0625
+11101: 0.0625
+11110: 0.0625
+# Sum = 1.0
+# Try: IsIndep(X1,Parity), IsIndep(X1,X2), entropy(Parity), mutual_info(X1,Parity), etc.

@@ -1,0 +1,40 @@
+# Cancer Network (5-variable diagnostic BN)
+# Structure:
+#   Pollution -> Cancer <- Smoker
+#   Cancer -> {Xray, Dyspnea}
+# Demonstrates: competing causes, diagnostic evidence, and how observing effects (Xray, Dyspnea)
+# informs the latent variable Cancer which then couples Pollution and Smoker.
+# Probabilities adapted from the standard textbook example (rounded):
+# P(Pollution=low (1)) = 0.9  (treat "1" as Low pollution for alignment with simplified binary encoding)
+# P(Smoker=1) = 0.3
+# P(Cancer=1 | Pollution, Smoker):
+#   P S : P(C=1)
+#   1 1 : 0.03
+#   1 0 : 0.001
+#   0 1 : 0.05
+#   0 0 : 0.02
+# P(Xray=1 | Cancer=1)=0.9 ; P(Xray=1 | Cancer=0)=0.2
+# P(Dyspnea=1 | Cancer=1)=0.65; P(Dyspnea=1 | Cancer=0)=0.30
+# (Binary values: 1 denotes the "positive" or named condition as per lines above.)
+
+variables: Pollution, Smoker, Cancer, Xray, Dyspnea
+
+Pollution: None
+1: 0.9
+
+Smoker: None
+1: 0.3
+
+Cancer: Pollution, Smoker
+11: 0.03  # P(C=1|P=1,S=1)
+10: 0.001 # P(C=1|P=1,S=0)
+01: 0.05  # P(C=1|P=0,S=1)
+00: 0.02  # P(C=1|P=0,S=0)
+
+Xray: Cancer
+1: 0.9  # P(X=1|C=1)
+0: 0.2  # P(X=1|C=0)
+
+Dyspnea: Cancer
+1: 0.65 # P(D=1|C=1)
+0: 0.30 # P(D=1|C=0)

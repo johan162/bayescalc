@@ -1,0 +1,25 @@
+# The standard example of a bayesian network with a Simplified Alarm Network
+# This is the same as "explaining_away_alarm.inp" file
+# Variables (binary, order B,E,A,J,M): Which stands for Burglary, Earthquake, Alarm, JohnCalls, MaryCalls.
+
+variables: B, E, A, J, M
+
+B : None
+1: 0.001 # P(B)
+
+E: None
+1: 0.002 # P(E)
+
+A: B, E
+11: 0.95
+10: 0.94
+01: 0.29
+00: 0.001
+
+J: A
+1: 0.9
+0: 0.05
+
+M: A
+1: 0.7
+0: 0.01

@@ -1,0 +1,26 @@
+# 4-Variable Markov Chain Example
+# Structure: A -> B -> C -> D (binary variables)
+# Interesting because: Demonstrates Markov property and conditional independencies:
+#   A ⟂ C | B,  B ⟂ D | C,  A ⟂ D | C (via d-separation), but A and D are marginally dependent.
+# Watch out: Conditioning on middle nodes breaks long-range dependencies; without conditioning, endpoints correlate.
+variables: A, B, C, D
+# Original draft probabilities summed to 0.845. Normalization factor applied: 1 / 0.845 = 1.18343195
+# Each probability below = original * 1.18343195 (rounded to 8 decimals) with the final entry adjusted to ensure exact sum 1.0.
+0000: 0.24852071
+0001: 0.08284024
+0010: 0.03550296
+0011: 0.03550296
+0100: 0.05917160
+0101: 0.02366864
+0110: 0.04733728
+0111: 0.07100592
+1000: 0.08284024
+1001: 0.02366864
+1010: 0.05917160
+1011: 0.07100592
+1100: 0.04733728
+1101: 0.01775148
+1110: 0.02958580
+1111: 0.06508873
+# Sum check (post-normalization): 1.0
+# Use queries like P(A,D), P(A|C), IsCondIndep(A,D|C) to explore the chain.

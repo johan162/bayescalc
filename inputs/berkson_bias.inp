@@ -1,0 +1,22 @@
+# Berkson's Bias (Collider Bias) Example
+# Variables: Disease1 (D1), Disease2 (D2), Admission (A)
+# A patient is admitted (A=1) if they have either disease with high probability; without any disease admission is rare.
+# Interesting because: D1 and D2 are (approximately) independent marginally, but become negatively associated
+# when conditioning on Admission=1 because A is a collider on paths D1->A<-D2.
+# Watch out: Conditioning (or selecting) on a collider can induce spurious correlations.
+variables: D1, D2, A
+# Construct probabilities: Base prevalence D1~0.2, D2~0.15 (approx), admission probability given diseases.
+# We'll encode joint over (D1,D2,A). State bits order: D1 D2 A.
+# Strategy: specify each triple probability directly; not exact factorization but captures qualitative effect.
+000: 0.50  # No diseases, not admitted (most of population)
+001: 0.02  # No diseases, admitted (rare baseline admission)
+010: 0.08  # D2 only, not admitted (missed admission)
+011: 0.05  # D2 only, admitted (likely)
+100: 0.10  # D1 only, not admitted
+101: 0.08  # D1 only, admitted
+110: 0.07  # Both diseases, not admitted (some miss rate)
+111: 0.10  # Both diseases, admitted (high)
+# Sum = 1.00
+# Check (approx) marginal independence: P(D1=1)=0.10+0.08+0.07+0.10=0.35; P(D2=1)=0.08+0.05+0.07+0.10=0.30
+# P(D1=1,D2=1)=0.07+0.10=0.17 vs 0.35*0.30=0.105 (so some dependence remains; small adjustments could reduce this but kept for simplicity).
+# If you condition on A=1, note how seeing D1=1 reduces probability D2=1 because many admitted patients with D1 do not also have D2 relative to joint structure.

@@ -1,0 +1,29 @@
+# Simpson's Paradox Example
+# Variables: Gender (0=Female,1=Male), Treatment (0=Control,1=Drug), Recovery (0=No,1=Yes)
+# Interesting because: Within each gender the treatment increases recovery probability,
+# but aggregated over genders the treatment appears worse due to different group sizes.
+# Watch out: Aggregating over a lurking variable (Gender) can reverse associations.
+variables: Gender, Treatment, Recovery
+# We'll construct a TRUE Simpson's paradox configuration.
+# Within EACH gender the treatment improves recovery, but overall (marginalizing Gender) treatment looks worse.
+# Construction logic (population mass allocations):
+#   Female Control mass = 0.40   (high baseline recovery 0.80)
+#   Female Treatment mass = 0.10 (higher recovery 0.90)
+#   Male   Control mass = 0.10   (lower baseline recovery 0.30)
+#   Male   Treatment mass = 0.40 (improved recovery 0.40 vs 0.30, but many low-prob successes)
+# Overall: Control recovery = 0.32+0.03 = 0.35  (35%)
+#          Treatment recovery = 0.09+0.16 = 0.25 (25%)  -> Treatment appears worse overall.
+000: 0.08  # Female, Control, No   (0.40 * 0.20)
+001: 0.32  # Female, Control, Yes  (0.40 * 0.80)
+010: 0.01  # Female, Treatment, No (0.10 * 0.10)
+011: 0.09  # Female, Treatment, Yes(0.10 * 0.90)
+100: 0.07  # Male, Control, No     (0.10 * 0.70)
+101: 0.03  # Male, Control, Yes    (0.10 * 0.30)
+110: 0.24  # Male, Treatment, No   (0.40 * 0.60)
+111: 0.16  # Male, Treatment, Yes  (0.40 * 0.40)
+# Sum check: 0.08+0.32+0.01+0.09+0.07+0.03+0.24+0.16 = 1.00
+# Verify paradox exactly:
+#   Female:   P(R=1|T=1,G=0)=0.09/(0.01+0.09)=0.90  >  P(R=1|T=0,G=0)=0.32/(0.08+0.32)=0.80
+#   Male:     P(R=1|T=1,G=1)=0.16/(0.24+0.16)=0.40  >  P(R=1|T=0,G=1)=0.03/(0.07+0.03)=0.30
+#   Overall:  P(R=1|T=1)=0.25 < P(R=1|T=0)=0.35 (reversal)
+# Watch how conditioning on Gender flips the apparent effect.

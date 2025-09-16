@@ -1,0 +1,7 @@
+# Sensitivity = 95%, Prevalence = 1%, Specificity = 94% (i.e Falses = 6%)
+# Sensitivity = P(Test|Sickness), Specificity = P(~Test|~Sickness)
+variables: Sickness, Test
+00: 0.9306
+01: 0.0594
+10: 0.0005
+11: 0.0095

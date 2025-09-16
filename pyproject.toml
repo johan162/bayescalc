@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bayes-scripts"
+version = "0.1.0"
+description = "Small Bayesian probability scripts and CLI for tests and demos"
+authors = [ { name = "ljp" } ]
+readme = "README.md"
+requires-python = ">=3.10"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["probs_core*"]
