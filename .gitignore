@@ -1,0 +1,12 @@
+.vscode/settings.json
+**/*.code-workspace
+.idea/
+**/*.pyc
+__pycache__/*.py
+.venv/
+env/
+dist/
+bayescalc.egg-info/
+
+
+
