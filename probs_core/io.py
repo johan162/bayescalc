@@ -171,6 +171,7 @@ def load_network_file(file_path: str, variable_names: Optional[List[str]] = None
 
     # Preprocess: strip comments and skip blanks
     cleaned = []
+    file_vars = []
     for line_num, raw in enumerate(raw_lines, 1):
         line = raw.strip()
         if not line or line.startswith('#'):
@@ -179,22 +180,29 @@ def load_network_file(file_path: str, variable_names: Optional[List[str]] = None
             line = line.split('#',1)[0].strip()
             if not line:
                 continue
+        # Support multiple variable declarations
+        if line.lower().startswith('variable '):
+            var_name = line[len('variable '):].split()[0].strip()
+            if var_name:
+                file_vars.append(var_name)
+            continue
         cleaned.append((line_num, line))
 
-    if not cleaned or not cleaned[0][1].lower().startswith('variables:'):
-        raise ValueError("Network file must start with 'variables:' line")
+    # Support legacy 'variables:' line as well
+    if cleaned and cleaned[0][1].lower().startswith('variables:'):
+        first = cleaned[0][1]
+        file_vars = [v.strip() for v in first[len('variables:'):].split(',') if v.strip()]
+        cleaned = cleaned[1:]
 
-    first = cleaned[0][1]
-    file_vars = [v.strip() for v in first[len('variables:'):].split(',') if v.strip()]
     if not file_vars:
-        raise ValueError("No variables declared in network file")
+        raise ValueError("No variables declared in network file (use 'variable NAME' or 'variables: ...')")
 
     names_to_use = variable_names or file_vars
     num_variables = len(names_to_use)
     name_index = {n: i for i,n in enumerate(names_to_use)}
 
     # Parse blocks: each block starts with '<Child>: <parents or None>' then CPT lines until next block or EOF
-    idx = 1
+    idx = 0
     parents_map = {}
     cpt_map = {}  # child -> dict[parent_assignment_tuple] = P(child=1 | parents)
 
@@ -232,22 +240,36 @@ def load_network_file(file_path: str, variable_names: Optional[List[str]] = None
                 if candidate_left in name_index and (len(parents) == 0 or not (set(candidate_left) <= {'0','1'} and len(candidate_left)==len(parents))):
                     # Start of next variable block
                     break
-            if ':' not in lcontent:
-                break
-            left, right = [x.strip() for x in lcontent.split(':',1)]
             if len(parents) == 0:
-                if left not in {'0','1'}:
-                    raise ValueError(f"Expected '1:' or '0:' for parentless variable {child} at line {ln}")
-                try:
-                    pval = float(right)
-                except ValueError:
-                    raise ValueError(f"Invalid probability at line {ln}: {right}")
-                if not (0 <= pval <= 1):
-                    raise ValueError(f"Probability out of range at line {ln}: {pval}")
-                local_cpt[()] = pval if left == '1' else 1 - pval
-                idx += 1
-                break
+                # Accept either '1: 0.001' or just '0.001'
+                if ':' in lcontent:
+                    left, right = [x.strip() for x in lcontent.split(':',1)]
+                    if left not in {'0','1'}:
+                        raise ValueError(f"Expected '1:' or '0:' for parentless variable {child} at line {ln}")
+                    try:
+                        pval = float(right)
+                    except ValueError:
+                        raise ValueError(f"Invalid probability at line {ln}: {right}")
+                    if not (0 <= pval <= 1):
+                        raise ValueError(f"Probability out of range at line {ln}: {pval}")
+                    local_cpt[()] = pval if left == '1' else 1 - pval
+                    idx += 1
+                    break
+                else:
+                    # Single value line: treat as P(child=1)
+                    try:
+                        pval = float(lcontent)
+                    except ValueError:
+                        raise ValueError(f"Invalid probability at line {ln}: {lcontent}")
+                    if not (0 <= pval <= 1):
+                        raise ValueError(f"Probability out of range at line {ln}: {pval}")
+                    local_cpt[()] = pval
+                    idx += 1
+                    break
             else:
+                if ':' not in lcontent:
+                    break
+                left, right = [x.strip() for x in lcontent.split(':',1)]
                 pattern = left
                 if not all(ch in '01' for ch in pattern) or len(pattern) != len(parents):
                     raise ValueError(f"Invalid parent assignment pattern '{pattern}' for child {child} at line {ln}")
