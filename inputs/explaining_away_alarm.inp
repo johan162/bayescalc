@@ -1,17 +1,4 @@
-# Explaining Away (Simplified Alarm Network) 
-# Variables (binary, order B,E,A,J,M):
-#   B (Burglary)  P(B)=0.01
-#   E (Earthquake) P(E)=0.002
-#   A (Alarm)  P(A|B)=0.94, P(A|E)=0.29, P(A|B,E)=0.95
-#   J (JohnCalls) P(J|A)=0.90 
-#   M (MaryCalls) P(M|A)=0.70
-# Factorization (assuming B ⟂ E):
-#   P(B,E,A,J,M)=P(B)P(E)P(A|B,E)P(J|A)P(M|A)
-# Demonstrates "explaining away": B -> A <- E, with J,M as noisy children of A.
-# Queries of interest:
-#   P(B|A), P(E|A), P(B|A,J), P(E|A,J,B)
-#   Demonstrate explaining-away: P(E|A=1) > P(E|A=1,B=1)
-# variables: Burglary, Earthquake, Alarm, JohnCalls, MaryCalls
+# Explaining-away alarm network: Burglary and Earthquake converge on Alarm; observing Alarm induces dependence and calls (John,Mary) provide noisy evidence.
 
 variables: B,E,A,J,M
 00000: 0.9367427006

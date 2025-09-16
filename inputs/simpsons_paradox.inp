@@ -1,8 +1,4 @@
-# Simpson's Paradox Example
-# Variables: Gender (0=Female,1=Male), Treatment (0=Control,1=Drug), Recovery (0=No,1=Yes)
-# Interesting because: Within each gender the treatment increases recovery probability,
-# but aggregated over genders the treatment appears worse due to different group sizes.
-# Watch out: Aggregating over a lurking variable (Gender) can reverse associations.
+# Simpson's Paradox: Treatment helps within each gender but looks harmful when genders are aggregated due to differing group proportions.
 variables: Gender, Treatment, Recovery
 # We'll construct a TRUE Simpson's paradox configuration.
 # Within EACH gender the treatment improves recovery, but overall (marginalizing Gender) treatment looks worse.

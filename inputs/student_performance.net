@@ -1,0 +1,133 @@
+# Student performance BN: Intelligence & Difficulty influence Prep and Grade; Grade drives Letter recommendation (multi-valued academic model).
+# Student Performance Bayesian Network (5 variables, multi-valued)
+# Inspired by classic "Student" BN variant.
+# Variables:
+#   Intelligence {Low, Medium, High}
+#   Difficulty   {Easy, Medium, Hard}
+#   Prep         {Poor, Adequate, Good}
+#   Grade        {C, B, A}
+#   Letter       {Strong, Weak}
+# Structure:
+#   Intelligence -> Prep
+#   Difficulty -> Grade
+#   Intelligence -> Grade
+#   Prep -> Grade
+#   Grade -> Letter
+
+variable Intelligence {Low, Medium, High}
+variable Difficulty {Easy, Medium, Hard}
+variable Prep {Poor, Adequate, Good}
+variable Grade {C, B, A}
+variable Letter {Strong, Weak}
+
+Intelligence <- None
+Low: 0.3
+Medium: 0.5
+High: 0.2
+
+Difficulty <- None
+Easy: 0.4
+Medium: 0.4
+Hard: 0.2
+
+Prep <- (Intelligence)
+(Poor | Low): 0.5
+(Adequate | Low): 0.35
+(Good | Low): 0.15
+(Poor | Medium): 0.3
+(Adequate | Medium): 0.45
+(Good | Medium): 0.25
+(Poor | High): 0.15
+(Adequate | High): 0.4
+(Good | High): 0.45
+
+Grade <- (Intelligence, Difficulty, Prep)
+(C | Low,Easy,Poor): 0.55
+(B | Low,Easy,Poor): 0.35
+(A | Low,Easy,Poor): 0.10
+(C | Low,Easy,Adequate): 0.45
+(B | Low,Easy,Adequate): 0.40
+(A | Low,Easy,Adequate): 0.15
+(C | Low,Easy,Good): 0.30
+(B | Low,Easy,Good): 0.45
+(A | Low,Easy,Good): 0.25
+(C | Low,Medium,Poor): 0.65
+(B | Low,Medium,Poor): 0.25
+(A | Low,Medium,Poor): 0.10
+(C | Low,Medium,Adequate): 0.55
+(B | Low,Medium,Adequate): 0.35
+(A | Low,Medium,Adequate): 0.10
+(C | Low,Medium,Good): 0.40
+(B | Low,Medium,Good): 0.45
+(A | Low,Medium,Good): 0.15
+(C | Low,Hard,Poor): 0.75
+(B | Low,Hard,Poor): 0.20
+(A | Low,Hard,Poor): 0.05
+(C | Low,Hard,Adequate): 0.65
+(B | Low,Hard,Adequate): 0.25
+(A | Low,Hard,Adequate): 0.10
+(C | Low,Hard,Good): 0.55
+(B | Low,Hard,Good): 0.30
+(A | Low,Hard,Good): 0.15
+(C | Medium,Easy,Poor): 0.45
+(B | Medium,Easy,Poor): 0.40
+(A | Medium,Easy,Poor): 0.15
+(C | Medium,Easy,Adequate): 0.35
+(B | Medium,Easy,Adequate): 0.45
+(A | Medium,Easy,Adequate): 0.20
+(C | Medium,Easy,Good): 0.25
+(B | Medium,Easy,Good): 0.45
+(A | Medium,Easy,Good): 0.30
+(C | Medium,Medium,Poor): 0.55
+(B | Medium,Medium,Poor): 0.35
+(A | Medium,Medium,Poor): 0.10
+(C | Medium,Medium,Adequate): 0.45
+(B | Medium,Medium,Adequate): 0.40
+(A | Medium,Medium,Adequate): 0.15
+(C | Medium,Medium,Good): 0.35
+(B | Medium,Medium,Good): 0.45
+(A | Medium,Medium,Good): 0.20
+(C | Medium,Hard,Poor): 0.60
+(B | Medium,Hard,Poor): 0.30
+(A | Medium,Hard,Poor): 0.10
+(C | Medium,Hard,Adequate): 0.50
+(B | Medium,Hard,Adequate): 0.35
+(A | Medium,Hard,Adequate): 0.15
+(C | Medium,Hard,Good): 0.40
+(B | Medium,Hard,Good): 0.40
+(A | Medium,Hard,Good): 0.20
+(C | High,Easy,Poor): 0.35
+(B | High,Easy,Poor): 0.45
+(A | High,Easy,Poor): 0.20
+(C | High,Easy,Adequate): 0.25
+(B | High,Easy,Adequate): 0.45
+(A | High,Easy,Adequate): 0.30
+(C | High,Easy,Good): 0.20
+(B | High,Easy,Good): 0.40
+(A | High,Easy,Good): 0.40
+(C | High,Medium,Poor): 0.45
+(B | High,Medium,Poor): 0.40
+(A | High,Medium,Poor): 0.15
+(C | High,Medium,Adequate): 0.35
+(B | High,Medium,Adequate): 0.45
+(A | High,Medium,Adequate): 0.20
+(C | High,Medium,Good): 0.25
+(B | High,Medium,Good): 0.45
+(A | High,Medium,Good): 0.30
+(C | High,Hard,Poor): 0.50
+(B | High,Hard,Poor): 0.35
+(A | High,Hard,Poor): 0.15
+(C | High,Hard,Adequate): 0.45
+(B | High,Hard,Adequate): 0.35
+(A | High,Hard,Adequate): 0.20
+(C | High,Hard,Good): 0.35
+(B | High,Hard,Good): 0.40
+(A | High,Hard,Good): 0.25
+
+Letter <- (Grade)
+(Strong | C): 0.2
+(Weak | C): 0.8
+(Strong | B): 0.5
+(Weak | B): 0.5
+(Strong | A): 0.9
+(Weak | A): 0.1

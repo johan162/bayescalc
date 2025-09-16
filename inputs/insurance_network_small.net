@@ -1,3 +1,4 @@
+# Simplified insurance BN: demographics & car features influence accidents then damage & medical costs (medium-scale dependency structure).
 # Insurance Bayesian Network (Reduced - 10 variables)
 # This is a simplified version of the Insurance network for testing
 # 
@@ -11,7 +12,7 @@
 # Accidents: Accident, ThisCarDam
 # Costs: MedCost
 
-# Variable declarations
+# Variable declarations (boolean variables implied)
 variable Age
 variable SocioEcon  
 variable GoodStudent
@@ -26,53 +27,53 @@ variable MedCost
 # Conditional Probability Tables
 
 # Root nodes (no parents)
-Age : None
-0.3  # P(Age=Young)
+Age <- None
+1: 0.3  # P(Age=1)
 
-SocioEcon : None
-0.4  # P(SocioEcon=High)
+SocioEcon <- None
+1: 0.4  # P(SocioEcon=1)
 
-MakeModel : None
-0.2  # P(MakeModel=Luxury)
+MakeModel <- None
+1: 0.2  # P(MakeModel=1)
 
 # Demographics
-GoodStudent : Age
-1: 0.8  # P(GoodStudent=True | Age=Young)
-0: 0.1  # P(GoodStudent=True | Age=Adult)
+GoodStudent <- (Age)
+(1 | 1): 0.8
+(1 | 0): 0.1
 
 # Vehicle characteristics
-CarValue : MakeModel
-1: 0.8  # P(CarValue=High | MakeModel=Luxury)
-0: 0.1  # P(CarValue=High | MakeModel=Economy)
+CarValue <- (MakeModel)
+(1 | 1): 0.8
+(1 | 0): 0.1
 
-Antilock : MakeModel
-1: 0.95  # P(Antilock=True | MakeModel=Luxury)
-0: 0.3   # P(Antilock=True | MakeModel=Economy)
+Antilock <- (MakeModel)
+(1 | 1): 0.95
+(1 | 0): 0.3
 
-Airbag : MakeModel
-1: 0.99  # P(Airbag=True | MakeModel=Luxury)
-0: 0.5   # P(Airbag=True | MakeModel=Economy)
+Airbag <- (MakeModel)
+(1 | 1): 0.99
+(1 | 0): 0.5
 
 # Accidents
-Accident : Age, Antilock
-11: 0.05  # P(Accident=Severe | Age=Young, Antilock=True)
-10: 0.15  # P(Accident=Severe | Age=Young, Antilock=False)
-01: 0.02  # P(Accident=Severe | Age=Adult, Antilock=True)
-00: 0.08  # P(Accident=Severe | Age=Adult, Antilock=False)
+Accident <- (Age, Antilock)
+(1 | 1,1): 0.05
+(1 | 1,0): 0.15
+(1 | 0,1): 0.02
+(1 | 0,0): 0.08
 
-ThisCarDam : Accident, CarValue
-11: 0.9  # P(ThisCarDam=Severe | Accident=Severe, CarValue=High)
-10: 0.6  # P(ThisCarDam=Severe | Accident=Severe, CarValue=Low)
-01: 0.3  # P(ThisCarDam=Severe | Accident=Mild, CarValue=High)
-00: 0.1  # P(ThisCarDam=Severe | Accident=Mild, CarValue=Low)
+ThisCarDam <- (Accident, CarValue)
+(1 | 1,1): 0.9
+(1 | 1,0): 0.6
+(1 | 0,1): 0.3
+(1 | 0,0): 0.1
 
 # Medical costs
-MedCost : Accident, Airbag, Age
-111: 0.2  # P(MedCost=High | Accident=Severe, Airbag=True, Age=Young)
-110: 0.4  # P(MedCost=High | Accident=Severe, Airbag=True, Age=Adult)
-101: 0.6  # P(MedCost=High | Accident=Severe, Airbag=False, Age=Young)
-100: 0.8  # P(MedCost=High | Accident=Severe, Airbag=False, Age=Adult)
-011: 0.05 # P(MedCost=High | Accident=Mild, Airbag=True, Age=Young)
-010: 0.1  # P(MedCost=High | Accident=Mild, Airbag=True, Age=Adult)
-001: 0.15 # P(MedCost=High | Accident=Mild, Airbag=False, Age=Young)
-000: 0.2  # P(MedCost=High | Accident=Mild, Airbag=False, Age=Adult)
+MedCost <- (Accident, Airbag, Age)
+(1 | 1,1,1): 0.2
+(1 | 1,1,0): 0.4
+(1 | 1,0,1): 0.6
+(1 | 1,0,0): 0.8
+(1 | 0,1,1): 0.05
+(1 | 0,1,0): 0.1
+(1 | 0,0,1): 0.15
+(1 | 0,0,0): 0.2

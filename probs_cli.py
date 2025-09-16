@@ -101,6 +101,8 @@ COMMANDS = [
     {"cmd": "sample(n=1)", "summary": "Draw n samples from the joint distribution (returns list of tuples)"},
     {"cmd": "save <filename>", "summary": "Save probabilities to a file"},
     {"cmd": "open <filename>", "summary": "Open a .inp or .net file and replace current system"},
+    {"cmd": "networks", "summary": "List available network input files with brief descriptions"},
+    {"cmd": "list", "summary": "List all variables and their possible state values"},
     {"cmd": "quit | exit", "summary": "Exit the program"},
 ]
 
@@ -170,7 +172,7 @@ def _read_single_char():
     finally:
         termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
     return ch
-def _completion_candidates(buffer: str, cursor_pos: int, variable_names: List[str]):
+def _completion_candidates(buffer: str, cursor_pos: int, variable_names: List[str], variable_states_map=None):
     """Return (candidates, word_start, stripped_current, function_like_set).
 
     Pure helper: computes completion candidates and context information.
@@ -212,6 +214,34 @@ def _completion_candidates(buffer: str, cursor_pos: int, variable_names: List[st
             j -= 1
         if token in function_like:
             suggest_variables = True
+
+    # Assignment value completion: detect pattern VarName=PartialState and suggest state names
+    if variable_states_map is not None:
+        # Scan backwards for '=' that starts the current token value context.
+        eq_idx = -1
+        i = cursor_pos - 1
+        # Stop scanning if we hit a delimiter that would end variable name region
+        delimiters = set(" ,()|")
+        while i >= 0:
+            ch = buffer[i]
+            if ch == '=':
+                eq_idx = i
+                break
+            if ch in delimiters:\
+                # Hit a delimiter before an '=', so not in an assignment value
+                break
+            i -= 1
+        if eq_idx != -1:
+            # Extract variable name left of '='
+            j = eq_idx - 1
+            while j >= 0 and buffer[j] not in delimiters and buffer[j] != '=':
+                j -= 1
+            var_name = buffer[j+1:eq_idx].strip()
+            if var_name in (variable_states_map.keys() if hasattr(variable_states_map, 'keys') else []):
+                # Suggest states for this variable
+                state_candidates = list(variable_states_map[var_name])
+                # Provide completion only of states (no function-like semantics)
+                return (state_candidates, word_start, stripped_current, function_like)
 
     if suggest_variables:
         return (list(variable_names), word_start, stripped_current, function_like)
@@ -267,7 +297,7 @@ def _completion_candidates(buffer: str, cursor_pos: int, variable_names: List[st
     return (norm, word_start, stripped_current, function_like)
 
 
-def tab_complete_input(prompt, variable_names: List[str]):
+def tab_complete_input(prompt, variable_names: List[str], variable_states_map=None):
     """Prompt for a line from the user with simple tab-completion.
 
     This is a small line-editor that supports backspace, left/right arrows
@@ -310,7 +340,7 @@ def tab_complete_input(prompt, variable_names: List[str]):
 
         # Tab -> completion
         if char == "\t":
-            candidates, word_start, stripped_current, function_like = _completion_candidates(buffer, cursor_pos, variable_names)
+            candidates, word_start, stripped_current, function_like = _completion_candidates(buffer, cursor_pos, variable_names, variable_states_map)
 
             if not candidates:
                 print("\a", end="", flush=True)
@@ -488,7 +518,9 @@ def run_interactive_loop(prob_system: ProbabilitySystem):
 
     while True:
         try:
-            query = tab_complete_input("\nQuery: ", prob_system.variable_names)
+            # Build variable->states mapping for value completion
+            states_map = {name: prob_system.variable_states[i] for i, name in enumerate(prob_system.variable_names)} if hasattr(prob_system, 'variable_states') else {name: ['0','1'] for name in prob_system.variable_names}
+            query = tab_complete_input("\nQuery: ", prob_system.variable_names, states_map)
         except KeyboardInterrupt:
             print("\nInterrupted. Exiting gracefully.")
             sys.exit(0)
@@ -742,6 +774,165 @@ def execute_command(prob_system: ProbabilitySystem, query: str):
             return f"Probabilities saved to {filename}"
         except Exception as e:
             return f"Error saving file: {e}"
+    if low.startswith("list"):
+        # Optional argument: variable name filter
+        parts = q.split(maxsplit=1)
+        filter_var = None
+        if len(parts) == 2:
+            candidate = parts[1].strip()
+            # Validate variable exists (case sensitive match to existing names)
+            if candidate not in prob_system.variable_names:
+                return f"Error: Unknown variable '{candidate}'"
+            filter_var = candidate
+        # Determine state lists; fall back to binary implicit if not present
+        if hasattr(prob_system, 'variable_states'):
+            var_states_full = prob_system.variable_states
+        else:
+            var_states_full = [["0","1"] for _ in prob_system.variable_names]
+        if filter_var:
+            names = [filter_var]
+            idx = prob_system.variable_names.index(filter_var)
+            var_states = [var_states_full[idx]]
+        else:
+            names = prob_system.variable_names
+            var_states = var_states_full
+        # Compute widths based on subset if filtered
+        name_col_w = max(len("Variable"), *(len(n) for n in names))
+        states_strs = [", ".join(states) for states in var_states]
+        _ = max(len("States"), *(len(s) for s in states_strs))  # retained for potential future alignment
+        header = f"{'Variable'.ljust(name_col_w)} | {'Card'.rjust(4)} | {'States'}"
+        max_row_len = 0
+        for name, states_repr, states in zip(names, states_strs, var_states):
+            row_len = len(f"{name.ljust(name_col_w)} | {str(len(states)).rjust(4)} | {states_repr}")
+            if row_len > max_row_len:
+                max_row_len = row_len
+        full_width = max(len(header), max_row_len)
+        sep = '-' * full_width
+        title = "Variable:" if filter_var else "Variables:";
+        print(f"\n{title}")
+        print(sep)
+        print(header)
+        print(sep)
+        for name, states, s_repr in zip(names, var_states, states_strs):
+            line = f"{name.ljust(name_col_w)} | {str(len(states)).rjust(4)} | {s_repr}"
+            if len(line) < full_width:
+                line += ' ' * (full_width - len(line))
+            print(line)
+        print(sep)
+        return None
+    if low.startswith("networks"):
+        # Scan inputs/ directory for .inp and .net files; extract first contiguous block of comment lines at top
+        import glob
+        input_dir = os.path.join(os.path.dirname(__file__), 'inputs')
+        # Optional filter argument: 'net' or 'inp'
+        parts = q.split()
+        ext_filter = None
+        if len(parts) == 2:
+            arg = parts[1].strip().lower()
+            if arg in ("net", "inp"):
+                ext_filter = '.' + arg
+            else:
+                return "Error: Unsupported networks filter. Use 'networks', 'networks net', or 'networks inp'"
+        patterns = []
+        if ext_filter in (None, '.inp'):
+            patterns.append(os.path.join(input_dir, '*.inp'))
+        if ext_filter in (None, '.net'):
+            patterns.append(os.path.join(input_dir, '*.net'))
+        files = []
+        for pat in patterns:
+            files.extend(glob.glob(pat))
+        files.sort()
+        rows = []  # (filename, var_count, description)
+        for path in files:
+            rel_name = os.path.basename(path)
+            desc_lines = []
+            var_count = None
+            try:
+                with open(path, 'r', encoding='utf-8') as fh:
+                    for line in fh:
+                        if line.strip() == '':
+                            # stop at first blank line after collecting any comment lines
+                            break
+                        if line.lstrip().startswith('#'):
+                            # strip leading '#' and whitespace
+                            cleaned = line.lstrip()[1:].strip()
+                            if cleaned:
+                                desc_lines.append(cleaned)
+                            else:
+                                # allow empty comment line to terminate
+                                break
+                        else:
+                            # first non-comment, non-blank line ends header extraction
+                            break
+                # Second pass to detect variable declarations
+                with open(path, 'r', encoding='utf-8') as fh2:
+                    for line in fh2:
+                        ls = line.strip()
+                        if not ls:
+                            continue
+                        # .inp / legacy .net variable header style
+                        if ls.lower().startswith('variables:'):
+                            after = ls.split(':',1)[1]
+                            names = [n.strip() for n in after.replace(',', ' ').split() if n.strip()]
+                            var_count = len(names)
+                            break
+                        # multi-valued .net declarations start with 'variable '
+                        if ls.startswith('variable '):
+                            # gather all consecutive 'variable ' lines
+                            multi_vars = []
+                            # read current line var name
+                            mline = ls[len('variable '):].strip()
+                            if ' ' in mline:
+                                name = mline.split('{',1)[0].strip()
+                            else:
+                                name = mline
+                            multi_vars.append(name)
+                            # continue scanning for more variable lines
+                            for l2 in fh2:
+                                s2 = l2.strip()
+                                if s2.startswith('variable '):
+                                    mline2 = s2[len('variable '):].strip()
+                                    if ' ' in mline2:
+                                        name2 = mline2.split('{',1)[0].strip()
+                                    else:
+                                        name2 = mline2
+                                    multi_vars.append(name2)
+                                    continue
+                                else:
+                                    break
+                            var_count = len(multi_vars)
+                            break
+            except Exception as e:
+                desc_lines = [f"(Error reading file: {e})"]
+            description = ' '.join(desc_lines) if desc_lines else '(No description)'
+            # Truncate overly long descriptions for table aesthetics
+            if len(description) > 160:
+                description = description[:157] + '...'
+            rows.append((rel_name, var_count if var_count is not None else 0, description))
+        if not rows:
+            print("No network files found in inputs/ directory.")
+            return None
+        # Compute column widths
+        name_col_w = max(len('File'), *(len(r[0]) for r in rows))
+        vars_col_w = max(len('Vars'), *(len(str(r[1])) for r in rows))
+        desc_col_w = max(len('Description'), *(len(r[2]) for r in rows))
+        # Bound description width to avoid overly wide tables
+        max_desc_width = 120
+        if desc_col_w > max_desc_width:
+            desc_col_w = max_desc_width
+        header = f"{'File'.ljust(name_col_w)} | {'Vars'.rjust(vars_col_w)} | Description"
+        sep = '-' * max(len(header), name_col_w + 3 + vars_col_w + 3 + desc_col_w)
+        title = "Available Networks" if ext_filter is None else f"Available {ext_filter} Networks"
+        print(f"\n{title}:")
+        print(sep)
+        print(header)
+        print(sep)
+        for fname, vcount, desc in rows:
+            if len(desc) > desc_col_w:
+                desc = desc[:desc_col_w-3] + '...'
+            print(f"{fname.ljust(name_col_w)} | {str(vcount).rjust(vars_col_w)} | {desc}")
+        print(sep)
+        return None
     if low == "joint_probs":
         _print_joint_table(prob_system)
         return None

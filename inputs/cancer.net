@@ -1,3 +1,4 @@
+# Cancer diagnosis BN: Pollution & Smoker influence Cancer which drives Xray and Dyspnea; dual findings combine for stronger evidence.
 # Cancer Network (5-variable diagnostic BN)
 # Structure:
 #   Pollution -> Cancer <- Smoker

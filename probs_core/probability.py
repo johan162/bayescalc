@@ -13,17 +13,33 @@ from .parsing import (
 from . import stats
 
 
+def _cartesian_product(lists: List[range]):
+    """Efficient cartesian product returning lists of indices."""
+    if not lists:
+        yield ()
+        return
+    for combo in itertools.product(*lists):
+        yield combo
+
+
 class ProbabilitySystem:
-    """High-level probability API: creation, probability computation, and query evaluation."""
+    """High-level probability API supporting binary and multi-valued discrete variables.
+
+    Backward compatibility: original constructor signature still works for binary variables
+    (joint_probs list of length 2^n - 1). For multi-valued variables, supply `variable_states`
+    and a full joint list of length Π card_i.
+    """
 
     def __init__(
         self,
         num_variables: int,
         joint_probs: List[float],
         variable_names: Optional[List[str]] = None,
+        variable_states: Optional[List[List[str]]] = None,
     ) -> None:
         self.num_variables = num_variables
 
+        # Variable names
         if variable_names is not None:
             if len(variable_names) != num_variables:
                 raise ValueError(
@@ -33,48 +49,109 @@ class ProbabilitySystem:
         else:
             self.variable_names = [chr(65 + i) for i in range(num_variables)]
 
-        expected_probs = 2**num_variables - 1
-        if len(joint_probs) != expected_probs:
-            raise ValueError(
-                f"Expected {expected_probs} probabilities, got {len(joint_probs)}"
-            )
+        # States (cardinalities)
+        if variable_states is None:
+            variable_states = [["0", "1"] for _ in range(num_variables)]
+        if len(variable_states) != num_variables:
+            raise ValueError("variable_states length mismatch num_variables")
 
-        last_prob = 1.0 - sum(joint_probs)
-        if last_prob < -1e-10:
-            raise ValueError(
-                f"Joint probabilities sum to more than 1 (sum={sum(joint_probs)})"
-            )
+        self.variable_states: List[List[str]] = []
+        self.state_name_to_index: List[Dict[str, int]] = []
+        for vs in variable_states:
+            if len(vs) < 2:
+                raise ValueError("Each variable must have at least 2 states")
+            mapping: Dict[str, int] = {}
+            cleaned: List[str] = []
+            for idx, raw_name in enumerate(vs):
+                name = raw_name.strip()
+                if name in mapping:
+                    raise ValueError(f"Duplicate state name '{name}' in {vs}")
+                mapping[name] = idx
+                cleaned.append(name)
+            self.variable_states.append(cleaned)
+            self.state_name_to_index.append(mapping)
+        self.cardinalities = [len(vs) for vs in self.variable_states]
 
-        all_probs = joint_probs + [max(0, last_prob)]
-
+        all_binary = all(c == 2 for c in self.cardinalities)
         self.joint_probabilities: Dict[Tuple[int, ...], float] = {}
-        for i, prob in enumerate(all_probs):
-            binary = [(i >> (num_variables - j - 1)) & 1 for j in range(num_variables)]
-            self.joint_probabilities[tuple(binary)] = prob
+        if all_binary and len(joint_probs) == 2**num_variables - 1:
+            # Legacy path with implicit last probability
+            last_prob = 1.0 - sum(joint_probs)
+            if last_prob < -1e-10:
+                raise ValueError(
+                    f"Joint probabilities sum to more than 1 (sum={sum(joint_probs)})"
+                )
+            all_probs = joint_probs + [max(0.0, last_prob)]
+            for i, prob in enumerate(all_probs):
+                assignment = [(i >> (num_variables - j - 1)) & 1 for j in range(num_variables)]
+                self.joint_probabilities[tuple(assignment)] = prob
+        else:
+            # Multi-valued (or explicit full binary) path: expect full joint list Π card_i
+            total_states = 1
+            for c in self.cardinalities:
+                total_states *= c
+            if len(joint_probs) != total_states:
+                raise ValueError(
+                    f"Expected full joint list of length {total_states}, got {len(joint_probs)}"
+                )
+            index = 0
+            for assignment in _cartesian_product([range(c) for c in self.cardinalities]):
+                self.joint_probabilities[tuple(assignment)] = joint_probs[index]
+                index += 1
+            total = sum(self.joint_probabilities.values())
+            if total <= 0:
+                raise ValueError("Total probability non-positive in joint initialization")
+            if abs(total - 1.0) > 1e-8:
+                # Normalize for robustness
+                for k in list(self.joint_probabilities.keys()):
+                    self.joint_probabilities[k] /= total
 
     @classmethod
     def from_file(
         cls, file_path: str, variable_names: Optional[List[str]] = None
     ) -> "ProbabilitySystem":
-        """Create a ProbabilitySystem by loading a joint-probability file.
+        """Create a ProbabilitySystem by loading a joint or network file.
 
-        Args:
-            file_path: path to the input file
-            variable_names: optional list of variable names to override file values
-
-        Returns:
-            A configured `ProbabilitySystem` instance.
+        For legacy binary network/.inp files the old semantics are preserved.
+        Multi-valued network parsing will be introduced in the updated .net parser
+        which will itself call the constructor with variable_states.
         """
-        # delegate to io.load_joint_prob_file to parse the file
         from .io import load_joint_prob_file, load_network_file
 
         if file_path.endswith('.net'):
-            num_variables, joint_probs, names_to_use = load_network_file(file_path, variable_names)
+            result = load_network_file(file_path, variable_names)
+            # Multi-valued path returns 4-tuple
+            if len(result) == 4:
+                num_variables, joint_probs, names_to_use, variable_states = result
+                return cls(num_variables, joint_probs, names_to_use, variable_states=variable_states)
+            else:
+                num_variables, joint_probs, names_to_use = result
+                return cls(num_variables, joint_probs, names_to_use)
         else:
             num_variables, joint_probs, names_to_use = load_joint_prob_file(
                 file_path, variable_names
             )
-        return cls(num_variables, joint_probs, names_to_use)
+            return cls(num_variables, joint_probs, names_to_use)
+
+    @classmethod
+    def from_states_and_joint(
+        cls,
+        variable_names: List[str],
+        variable_states: List[List[str]],
+        joint_probabilities: Dict[Tuple[int, ...], float],
+    ) -> "ProbabilitySystem":
+        """Construct from an explicit full joint probability dictionary.
+
+        Missing assignments are treated as probability 0.
+        """
+        num_variables = len(variable_names)
+        if len(variable_states) != num_variables:
+            raise ValueError("variable_states length mismatch variable_names length")
+        # Build ordered list of probs
+        cards = [len(vs) for vs in variable_states]
+        all_assignments = list(_cartesian_product([range(c) for c in cards]))
+        ordered = [joint_probabilities.get(tuple(a), 0.0) for a in all_assignments]
+        return cls(num_variables, ordered, variable_names, variable_states=variable_states)
 
     # --- Arithmetic & query evaluation
     def evaluate_arithmetic_expression(self, expr: str) -> float:
@@ -134,20 +211,56 @@ class ProbabilitySystem:
         return float(result)
 
     def get_joint_probability(self, variable_values: Tuple[int, ...]) -> float:
-        """Return the joint probability for a full assignment represented by a tuple of 0/1 values.
-
-        Args:
-            variable_values: tuple of 0/1 values with length == num_variables
-        """
+        """Return the joint probability for a full assignment (state indices)."""
         return self.joint_probabilities.get(variable_values, 0.0)
 
-    def get_marginal_probability(self, variables: List[int], values: List[int]) -> float:
-        """Compute marginal probability P(vars=values) by summing the joint distribution.
+    # Convenience name/state based wrapper APIs (used by new tests)
+    def _resolve_name_state_mapping(self, assignment: dict) -> Tuple[List[int], List[int]]:
+        vars_idx: List[int] = []
+        vals: List[int] = []
+        for name, state in assignment.items():
+            vidx = self._name_to_index(name)
+            if isinstance(state, str):
+                # state name
+                if state not in self.state_name_to_index[vidx]:
+                    raise ValueError(f"Unknown state '{state}' for variable '{name}'")
+                vals.append(self.state_name_to_index[vidx][state])
+            else:
+                # assume integer index or binary 0/1 literal
+                sval = int(state)
+                if not (0 <= sval < self.cardinalities[vidx]):
+                    raise ValueError(f"State index {sval} out of range for variable '{name}'")
+                vals.append(sval)
+            vars_idx.append(vidx)
+        return vars_idx, vals
 
-        Args:
-            variables: list of variable indices
-            values: list of 0/1 values matching `variables`
-        """
+    def probability_of(self, assignment: dict) -> float:
+        """Return marginal probability for a (possibly partial) assignment given as {VarName: StateNameOrIndex}."""
+        vars_idx, vals = self._resolve_name_state_mapping(assignment)
+        return self.get_marginal_probability(vars_idx, vals)
+
+    def conditional_probability_of(self, target: dict, given: dict) -> float:
+        """Return conditional probability P(target | given) for name/state dictionaries."""
+        t_vars, t_vals = self._resolve_name_state_mapping(target)
+        g_vars, g_vals = self._resolve_name_state_mapping(given)
+        return self.get_conditional_probability(g_vars, g_vals, t_vars, t_vals)
+
+    def joint_probability_of(self, assignment: dict) -> float:
+        """Return joint probability for a full assignment dictionary. (All variables not required; missing ones marginalized.)"""
+        # If not all variables provided just treat as marginal
+        if len(assignment) != self.num_variables:
+            return self.probability_of(assignment)
+        vars_idx, vals = self._resolve_name_state_mapping(assignment)
+        # reorder into full tuple order
+        full_states = [0]*self.num_variables
+        for vidx, vval in zip(vars_idx, vals):
+            full_states[vidx] = vval
+        return self.get_joint_probability(tuple(full_states))
+
+    def get_marginal_probability(self, variables: List[int], values: List[int]) -> float:
+        """Compute P(variables=values) by summing over remaining variables.
+
+        Values are integer state indices. Legacy binary queries still work (0/1 states)."""
         if len(variables) != len(values):
             raise ValueError("Number of variables must match number of values")
 
@@ -186,102 +299,105 @@ class ProbabilitySystem:
         return joint_prob / condition_prob
 
     def is_independent(self, var1: int, var2: int) -> bool:
-        """Test whether two variables are (pairwise) independent.
-
-        Returns True if P(X,Y)=P(X)P(Y) for all binary assignments.
-        """
-        for val1 in [0, 1]:
-            for val2 in [0, 1]:
-                joint_prob = self.get_marginal_probability([var1, var2], [val1, val2])
-                marg_prob1 = self.get_marginal_probability([var1], [val1])
-                marg_prob2 = self.get_marginal_probability([var2], [val2])
-                if abs(joint_prob - marg_prob1 * marg_prob2) > 1e-10:
-                    return False
-
+        """Return True if P(X=i,Y=j)=P(X=i)P(Y=j) for all states i,j."""
+        for i in range(self.cardinalities[var1]):
+            for j in range(self.cardinalities[var2]):
+                joint_prob = self.get_marginal_probability([var1, var2], [i, j])
+                if joint_prob == 0.0:
+                    # still need to ensure product zero
+                    marg_i = self.get_marginal_probability([var1], [i])
+                    marg_j = self.get_marginal_probability([var2], [j])
+                    if abs(marg_i * marg_j) > 1e-10:
+                        return False
+                else:
+                    marg_i = self.get_marginal_probability([var1], [i])
+                    marg_j = self.get_marginal_probability([var2], [j])
+                    if abs(joint_prob - marg_i * marg_j) > 1e-10:
+                        return False
         return True
 
-    def is_conditionally_independent(
-        self, var1: int, var2: int, given_var: int
-    ) -> bool:
-        """Test whether var1 and var2 are conditionally independent given `given_var`.
-
-        Returns True if P(X,Y|Z)=P(X|Z)P(Y|Z) for all binary assignments.
-        """
-        for val1 in [0, 1]:
-            for val2 in [0, 1]:
-                for given_val in [0, 1]:
-                    joint_cond_prob = self.get_conditional_probability(
-                        [given_var], [given_val], [var1, var2], [val1, val2]
-                    )
-
-                    cond_prob1 = self.get_conditional_probability(
-                        [given_var], [given_val], [var1], [val1]
-                    )
-
-                    cond_prob2 = self.get_conditional_probability(
-                        [given_var], [given_val], [var2], [val2]
-                    )
-
-                    if abs(joint_cond_prob - cond_prob1 * cond_prob2) > 1e-10:
+    def is_conditionally_independent(self, var1: int, var2: int, given_var: int) -> bool:
+        """Return True if P(X=i,Y=j|Z=k)=P(X=i|Z=k)P(Y=j|Z=k) for all states."""
+        for i in range(self.cardinalities[var1]):
+            for j in range(self.cardinalities[var2]):
+                for k in range(self.cardinalities[given_var]):
+                    joint_cond = self.get_conditional_probability([given_var], [k], [var1, var2], [i, j])
+                    p_x_given = self.get_conditional_probability([given_var], [k], [var1], [i])
+                    p_y_given = self.get_conditional_probability([given_var], [k], [var2], [j])
+                    if abs(joint_cond - p_x_given * p_y_given) > 1e-10:
                         return False
-
         return True
 
     # --- Parsing related methods (use parsing helpers)
     def parse_variable_expression(self, expr: str) -> Tuple[List[int], List[int]]:
-        """Parse a variable expression like 'A, ~B, C' into indices and binary values.
+        """Parse variable/state expression.
 
-        Returns (variables, values) where values are 1 for presence and 0 for negation.
+        Legacy binary forms:
+            A, ~B, Not(C), B=1, C=0
+        Multi-valued form requires explicit states:
+            Weather=Rainy, Traffic=Heavy
+        Binary variables also accept explicit assignment A=0/1.
+        Returns (variables, state_indices).
         """
-        variables = []
-        values = []
-
+        variables: List[int] = []
+        values: List[int] = []
         parts = [p.strip() for p in expr.split(",")]
-
         for part in parts:
             if not part:
                 continue
-
             original = part
             negated = False
-            explicit_value = None
+            explicit_value: Optional[int] = None
 
-            # Support explicit assignments like A=1, B=0 (possibly with spaces)
             if "=" in part:
                 left, right = part.split("=", 1)
-                part = left.strip()
+                var_name = left.strip()
                 right = right.strip()
-                if right not in {"0", "1"}:
-                    raise ValueError(f"Invalid assignment value in token '{original}'")
-                explicit_value = int(right)
+                var_idx_tmp = self._name_to_index(var_name)
+                # If binary and right is 0/1 -> direct
+                if self.cardinalities[var_idx_tmp] == 2 and right in {"0", "1"}:
+                    explicit_value = int(right)
+                    part = var_name
+                else:
+                    # interpret as named state
+                    state_map = self.state_name_to_index[var_idx_tmp]
+                    if right not in state_map:
+                        raise ValueError(f"Unknown state '{right}' for variable '{var_name}' in token '{original}'")
+                    explicit_value = state_map[right]
+                    part = var_name
 
-            # Detect negation forms (~A, ~(A), Not(A))
             if part.startswith("Not(") and part.endswith(")"):
                 negated = True
                 part = part[4:-1].strip()
-            else:
-                if part.startswith("~"):
-                    negated = True
-                    part = part[1:].strip()
-                    if part.startswith("(") and part.endswith(")"):
-                        part = part[1:-1].strip()
+            elif part.startswith("~"):
+                negated = True
+                part = part[1:].strip()
+                if part.startswith("(") and part.endswith(")"):
+                    part = part[1:-1].strip()
 
             var_idx = self._name_to_index(part)
 
-            # Resolve final value precedence and conflict detection
             if explicit_value is not None:
                 if negated:
-                    # ~A implies value 0; Not(A) likewise. Disallow contradiction like ~A=1
-                    implied = 0
-                    if explicit_value != implied:
-                        raise ValueError(
-                            f"Conflicting negation and assignment in token '{original}'"
-                        )
-                    final_value = explicit_value
+                    if self.cardinalities[var_idx] != 2:
+                        raise ValueError("Negation only allowed for binary variables")
+                    if explicit_value != 0:
+                        raise ValueError(f"Conflicting negation and assignment in token '{original}'")
+                    final_value = 0
                 else:
                     final_value = explicit_value
             else:
-                final_value = 0 if negated else 1
+                # No explicit state specified
+                if negated:
+                    if self.cardinalities[var_idx] != 2:
+                        raise ValueError("Negation only allowed for binary variables")
+                    final_value = 0
+                else:
+                    if self.cardinalities[var_idx] != 2:
+                        raise ValueError(
+                            f"Variable '{self.variable_names[var_idx]}' is multi-valued; explicit state assignment required (e.g. Var=State)."
+                        )
+                    final_value = 1  # default positive state for binary
 
             variables.append(var_idx)
             values.append(final_value)

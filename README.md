@@ -30,7 +30,15 @@ Sickness | Test | Probability
 1 | 0 | 0.000500
 1 | 1 | 0.009500
 
-Tab completion enabled. Type the first few letters of a variable name and press Tab to complete it.
+Tab completion enabled. Type the first few letters of a variable name and press Tab to complete it. For multi-valued variables you can also type `Variable=` then press Tab to see valid state names (e.g. `Weather=` + Tab suggests `Sunny, Cloudy, Rainy`). Binary variables suggest `0` and `1` when you press Tab after `Var=`.
+
+Listing variables and states:
+You can display all currently loaded variables and their possible states with the `list` command. To focus on a single variable (useful in large networks), supply its name: `list Weather`.
+Examples:
+```
+list          # show every variable and its states
+list Weather  # show only the states for the Weather variable
+```
 
 Example Queries:
 Examples: P(Sickness), P(Sickness,Test), P(Sickness|Test)
@@ -38,6 +46,34 @@ Examples: P(Sickness), P(Sickness,Test), P(Sickness|Test)
 Type 'help' to see available commands, 'quit' (or 'exit') to exit.
 
 Query: 
+```
+
+## Command Line Usage Quick Reference
+
+You can see these options anytime with `python probs.py --help` (or by supplying a file then `--help`). Below is an inlined copy of the main CLI arguments for convenience.
+
+```
+usage: probs.py [-h] [--names NAMES [NAMES ...]] [--cmds CMDS] [file]
+
+Positional arguments:
+  file                  Optional path to a probability specification file (.inp joint table or .net Bayesian network). If omitted you'll be prompted or can explore interactively.
+
+Optional arguments:
+  -h, --help            Show help and exit.
+  --names, -n           One or more custom variable names to apply when loading a joint table (.inp). Provide space-separated names (must match variable count). Ignored for multi-valued .net that already declare variables.
+  --cmds CMDS           Semicolon-separated list of commands to execute non-interactively after loading the file, then exit (unless a REPL-only command requires interaction). Example: --cmds "P(A);entropy;networks;exit".
+
+Examples:
+  python probs.py                      # interactive (manual input prompt)
+  python probs.py inputs/medical_test.inp
+  python probs.py inputs/medical_test.inp --names Sickness Test
+  python probs.py inputs/weather_picnic.net --cmds "P(Weather=Sunny);entropy;exit"
+  python probs.py --help
+
+Non-interactive batch example (run commands then quit):
+  python probs.py inputs/medical_test.inp --cmds "P(Sickness|Test);odds_ratio(Sickness,Test);exit"
+
+Tip: Use `--cmds` in scripts/CI to capture deterministic output without driving the REPL.
 ```
 
 The input data can either be specified interactively (which is a bit tedious) or read from a file that can either have the format of a joint probability table (possibly sparse) or as a number of conditional probability tables which specifies a Bayesian network. The Bayesian network format is often the simplest way to specify the system
@@ -239,6 +275,62 @@ print(ps.get_marginal_probability([0],[1]))  # P(B=1)
 ```
 
 This produces a joint distribution consistent with the supplied CPTs and enables all standard queries and derived statistics.
+
+### Multi-Valued Bayesian Network Syntax (New)
+
+The enhanced `.net` format allows each variable to have an arbitrary discrete state space instead of assuming all variables are binary.
+
+Key elements:
+
+1. Variable declaration
+  - Multi-valued: `variable Weather {Sunny, Rainy, Cloudy}`
+  - Boolean (implicit states `0,1`): `variable Alarm`
+2. Parent specification
+  - `Alarm <- None` (root)
+  - `Traffic <- (Weather)`
+  - `Risk <- (Age, Habits)`
+3. CPT lines
+  - Root variable states: one line per state: `Sunny: 0.6`, `Rainy: 0.4`, `Cloudy: 0.0` (must sum to 1.0 including any zeros)
+  - Child variable: `(ChildState | parent_state1, parent_state2, ...) : probability`
+    Example: `(Heavy | Rainy): 0.8`
+4. Probability validation
+  - For every parent state combination, the probabilities across all child states must sum to 1.0 (missing states treated as 0 before validation, so if sum < 1 it triggers an error).
+5. Queries
+  - Multi-valued variables require explicit assignments: `P(Weather=Rainy)`
+  - Boolean variables still accept `P(Rain)` (meaning state 1) and negation `P(~Rain)` / `P(Not(Rain))`.
+  - Mixed: `P(Traffic=Heavy|Weather=Sunny)` works as expected.
+
+#### Example
+```
+variable Weather {Sunny, Rainy}
+variable Traffic {Light, Heavy}
+Weather <- None
+Sunny: 0.6
+Rainy: 0.4
+Traffic <- (Weather)
+(Light | Sunny): 0.7
+(Heavy | Sunny): 0.3
+(Light | Rainy): 0.2
+(Heavy | Rainy): 0.8
+```
+
+#### Backward Compatibility
+Legacy binary `.net` files (using `Child: Parent1,Parent2` and bit patterns) continue to work. Detection logic routes old files to the legacy binary parser and new syntax files to the multi-valued parser.
+
+#### Migration Notes
+To migrate a binary `.net` file to the new syntax:
+1. Replace headers `Child : Parent1, Parent2` with `Child <- (Parent1, Parent2)` (or `Child <- None`).
+2. Convert binary CPT lines `11: 0.8` to tuple lines `+(1 | 1,1): 0.8` if you want uniform style (optional for strictly binary variables—legacy style remains supported).
+3. Add explicit state lists only where you need more than two states.
+
+#### Design Rationale
+This format was chosen to remain human-editable while enabling multi-valued state spaces without introducing a heavier JSON/YAML requirement. Explicit tuple notation ensures clarity about which child state a probability line refers to and scales to many parents.
+
+#### Limitations / Future Work
+- No support yet for implicit residual probability (i.e., auto-filling last child state). All states must sum to 1 per parent combination.
+- Independence tests currently iterate over full state ranges; large cardinalities may increase computation time (future optimization: factorized inference or caching).
+- Possible future extension: allow `default=0` style or wildcard parent patterns.
+
 
 ### Error Handling
 
@@ -995,6 +1087,23 @@ Examples:
 
 Exit the program
 
+### `networks [inp|net]`
+
+List example network files in the `inputs/` directory with a brief description (taken from the file's leading comment block up to the first blank or data line). Shows a `Vars` column with detected variable count.
+
+Optional filter argument limits results by extension:
+
+- `networks` (all `.inp` and `.net`)
+- `networks inp` (only joint table `.inp` files)
+- `networks net` (only Bayesian network `.net` files)
+
+Examples:
+```
+networks
+networks net
+networks inp
+```
+
 <!-- CLI_HELP_END -->
 
 ## Appendix D: Methodology & Internal Mechanics
@@ -1135,5 +1244,112 @@ Purpose: fast recall of common patterns without scanning the full documentation.
 - Forgetting that `P(A,B|C)` assumes `A=B=1` unless explicit 0 given.
 - Using `IsIndep` when supports are tiny—floating noise may mislead; inspect raw probabilities.
 - Confusing `P(~A)` with `1-P(A)` (they're equal, but direct query avoids accumulation error when P(A) computed by summing many small cells).
+
+## 4. Multi-Valued Example Networks Added
+
+The repository includes four illustrative multi-valued Bayesian networks (each ≤5 variables) showcasing richer state spaces. They can be loaded with `python probs.py inputs/<file>.net`.
+
+### 4.1 Weather Picnic (`weather_picnic.net`)
+Variables:
+- `Weather {Sunny, Cloudy, Rainy}` (root)
+- `Forecast {Sunny, Cloudy, Rainy}` (child of Weather)
+- `Picnic {Yes, No}` (child of Weather, Forecast)
+
+Highlights:
+- Demonstrates two multi-valued causes (`Weather`, `Forecast`) influencing a binary decision (`Picnic`).
+- Captures imperfect forecasting: `Forecast` distribution varies with `Weather`.
+
+Interesting Examinations:
+- Compare actual vs forecast reliability: `P(Weather=Sunny|Forecast=Sunny)` vs prior `P(Weather=Sunny)`.
+- Decision sensitivity: `P(Picnic=Yes|Forecast=Sunny)` vs `P(Picnic=Yes|Forecast=Rainy)`.
+- Effect of mis-forecast: `P(Picnic=Yes|Weather=Rainy, Forecast=Sunny)`.
+
+Sample Queries:
+```
+P(Weather=Rainy)
+P(Picnic=Yes)
+P(Picnic=Yes|Forecast=Sunny)
+P(Weather=Sunny|Forecast=Sunny)
+```
+
+### 4.2 ALARM Subset (`alarm_subset.net`)
+Variables:
+- `VentMach {On, Off}` (root)
+- `VentTube {Clear, Blocked}` (root)
+- `Press {Low, Normal, High}` (child of VentMach, VentTube)
+- `CO2 {Low, Normal, High}` (child of Press)
+- `Alarm {Yes, No}` (child of Press, CO2)
+
+Highlights:
+- Shows cascade of evidence propagation through physiologic parameters.
+- Introduces converging connections at `Alarm` (two parents) and diverging at `Press`.
+
+Interesting Examinations:
+- Anomaly detection: `P(Alarm=Yes|CO2=High)` vs `P(Alarm=Yes)`.
+- Mediated influence: `IsCondIndep(VentMach,CO2|Press)` should hold (d-separation check through chain).
+- Mixed state marginal: compute `P(Press=High)` from factorization.
+
+Sample Queries:
+```
+P(Press=High)
+P(CO2=High|Press=High)
+P(Alarm=Yes|Press=High,CO2=High)
+IsCondIndep(VentMach,CO2|Press)
+```
+
+### 4.3 Student Performance (`student_performance.net`)
+Variables:
+- `Intelligence {Low, Medium, High}` (root)
+- `Difficulty {Easy, Medium, Hard}` (root)
+- `Prep {Poor, Adequate, Good}` (child of Intelligence)
+- `Grade {C, B, A}` (child of Intelligence, Difficulty, Prep)
+- `Letter {Strong, Weak}` (child of Grade)
+
+Highlights:
+- Rich multi-parent CPT for `Grade` combining aptitude, effort, and course difficulty.
+- Demonstrates hierarchical dependency culminating in a binary recommendation (`Letter`).
+
+Interesting Examinations:
+- Effect decomposition: Compare `P(Grade=A|Intelligence=High, Difficulty=Hard, Prep=Good)` vs same with `Prep=Poor` to isolate preparation impact.
+- Recommendation reliability: `P(Letter=Strong|Grade=B)` vs `P(Letter=Strong|Grade=A)`.
+- Marginal skill assessment: `P(Prep=Good)` computed from `Intelligence` prior and CPT.
+
+Sample Queries:
+```
+P(Grade=A)
+P(Grade=A|Intelligence=High,Difficulty=Hard,Prep=Good)
+P(Letter=Strong)
+P(Letter=Strong|Grade=B)
+```
+
+### 4.4 Medical Diagnosis Mini (`medical_diagnosis_mini.net`)
+Variables:
+- `Disease {None, Mild, Severe}` (root)
+- `TestResult {Negative, WeakPos, StrongPos}` (child of Disease)
+- `SymptomA {Absent, Mild, Strong}` (child of Disease)
+- `SymptomB {Absent, Present}` (child of Disease)
+- `Treatment {None, Basic, Aggressive}` (child of Disease, SymptomA, SymptomB)
+
+Highlights:
+- Multi-valued diagnostic staging (`Disease`) drives observable evidence and downstream treatment intensity.
+- Demonstrates combining multiple symptom severities into treatment decision.
+
+Interesting Examinations:
+- Screening performance: `P(Disease=Severe|TestResult=StrongPos)` vs prior severity rate.
+- Symptom synergy: `P(Treatment=Aggressive|Disease=Mild,SymptomA=Strong,SymptomB=Present)`.
+- Value of test: Compare `P(Disease=Severe|TestResult=WeakPos)` with `P(Disease=Severe|TestResult=Negative)`.
+
+Sample Queries:
+```
+P(Disease=Severe)
+P(TestResult=StrongPos|Disease=Severe)
+P(Treatment=Aggressive|Disease=Severe,SymptomA=Strong,SymptomB=Present)
+P(Disease=Severe|TestResult=StrongPos)
+```
+
+### Suggested Cross-Network Analyses
+- Entropy comparison: Which network exhibits highest entropy over its joint? (`entropy()` with no args.)
+- Sensitivity: For each decision/outcome node (`Picnic`, `Alarm`, `Letter`, `Treatment`), compute mutual information with each parent to rank influence.
+- Scenario inversion: Use conditional probabilities to perform diagnostic reasoning (e.g., compute `P(Disease=Severe|SymptomA=Strong,SymptomB=Present)`).
 
 

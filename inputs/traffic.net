@@ -1,3 +1,4 @@
+# Traffic delay network: RushHour and Accident raise Traffic which drives Late arrival; shows converging and downstream causal effects.
 # Traffic Network (5-variable causal BN)
 # Structure:
 #   RushHour -> {Accident, Traffic}

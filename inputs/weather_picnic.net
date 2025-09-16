@@ -1,0 +1,44 @@
+# Weather-Picnic BN: Weather influences Forecast; both affect Picnic decision (showing multi-valued causal + decision interplay).
+
+variable Weather {Sunny, Cloudy, Rainy}
+variable Forecast {Sunny, Cloudy, Rainy}
+variable Picnic {Yes, No}
+
+# Root
+Weather <- None
+Sunny: 0.5
+Cloudy: 0.3
+Rainy: 0.2
+
+# Forecast depends on Weather
+Forecast <- (Weather)
+(Sunny | Sunny): 0.7
+(Cloudy | Sunny): 0.2
+(Rainy | Sunny): 0.1
+(Sunny | Cloudy): 0.2
+(Cloudy | Cloudy): 0.6
+(Rainy | Cloudy): 0.2
+(Sunny | Rainy): 0.1
+(Cloudy | Rainy): 0.2
+(Rainy | Rainy): 0.7
+
+# Picnic decision depends on Weather & Forecast
+Picnic <- (Weather, Forecast)
+(Yes | Sunny,Sunny): 0.9
+(No  | Sunny,Sunny): 0.1
+(Yes | Sunny,Cloudy): 0.8
+(No  | Sunny,Cloudy): 0.2
+(Yes | Sunny,Rainy): 0.4
+(No  | Sunny,Rainy): 0.6
+(Yes | Cloudy,Sunny): 0.7
+(No  | Cloudy,Sunny): 0.3
+(Yes | Cloudy,Cloudy): 0.5
+(No  | Cloudy,Cloudy): 0.5
+(Yes | Cloudy,Rainy): 0.3
+(No  | Cloudy,Rainy): 0.7
+(Yes | Rainy,Sunny): 0.4
+(No  | Rainy,Sunny): 0.6
+(Yes | Rainy,Cloudy): 0.3
+(No  | Rainy,Cloudy): 0.7
+(Yes | Rainy,Rainy): 0.1
+(No  | Rainy,Rainy): 0.9

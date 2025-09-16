@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bayescalc"
-version = "1.0.0"
-description = "Small Bayesian probability scripts and CLI for tests and demos"
+version = "1.1.0"
+description = "Bayesian probability calculator and CLI for tests and demos"
 authors = [ { name = "ljp" } ]
 readme = "README.md"
 requires-python = ">=3.10"

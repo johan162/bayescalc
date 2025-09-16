@@ -1,0 +1,73 @@
+# ALARM subset: ventilator machine/tube affect Press & CO2 which trigger Alarm; showcases cascading and converging medical monitoring signals.
+# ALARM Subset (5 variables, multi-valued)
+# Adapted small subset of ALARM network focusing on ventilation and blood gas.
+# Variables:
+#   VentMach   {On, Off}
+#   VentTube   {Clear, Blocked}
+#   Press      {Low, Normal, High}
+#   CO2        {Low, Normal, High}
+#   Alarm      {Yes, No}
+# Structure:
+#   VentMach -> Press
+#   VentTube -> Press
+#   Press -> CO2
+#   Press, CO2 -> Alarm
+
+variable VentMach {On, Off}
+variable VentTube {Clear, Blocked}
+variable Press {Low, Normal, High}
+variable CO2 {Low, Normal, High}
+variable Alarm {Yes, No}
+
+VentMach <- None
+On: 0.85
+Off: 0.15
+
+VentTube <- None
+Clear: 0.9
+Blocked: 0.1
+
+Press <- (VentMach, VentTube)
+(Low | On,Clear): 0.05
+(Normal | On,Clear): 0.85
+(High | On,Clear): 0.10
+(Low | On,Blocked): 0.15
+(Normal | On,Blocked): 0.70
+(High | On,Blocked): 0.15
+(Low | Off,Clear): 0.40
+(Normal | Off,Clear): 0.50
+(High | Off,Clear): 0.10
+(Low | Off,Blocked): 0.55
+(Normal | Off,Blocked): 0.35
+(High | Off,Blocked): 0.10
+
+CO2 <- (Press)
+(Low | Low): 0.20
+(Normal | Low): 0.60
+(High | Low): 0.20
+(Low | Normal): 0.05
+(Normal | Normal): 0.85
+(High | Normal): 0.10
+(Low | High): 0.02
+(Normal | High): 0.68
+(High | High): 0.30
+
+Alarm <- (Press, CO2)
+(Yes | Low,Low): 0.40
+(No  | Low,Low): 0.60
+(Yes | Low,Normal): 0.30
+(No  | Low,Normal): 0.70
+(Yes | Low,High): 0.55
+(No  | Low,High): 0.45
+(Yes | Normal,Low): 0.10
+(No  | Normal,Low): 0.90
+(Yes | Normal,Normal): 0.05
+(No  | Normal,Normal): 0.95
+(Yes | Normal,High): 0.15
+(No  | Normal,High): 0.85
+(Yes | High,Low): 0.25
+(No  | High,Low): 0.75
+(Yes | High,Normal): 0.15
+(No  | High,Normal): 0.85
+(Yes | High,High): 0.35
+(No  | High,High): 0.65

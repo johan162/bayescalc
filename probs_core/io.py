@@ -1,6 +1,6 @@
 import os
 import itertools
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict, Any
 import math
 
 
@@ -147,29 +147,28 @@ def write_joint_prob_file(file_path: str, variable_names: List[str], joint_proba
 
 
 # ----------------- Bayesian Network (.net) format support -----------------
-def load_network_file(file_path: str, variable_names: Optional[List[str]] = None) -> Tuple[int, List[float], Optional[List[str]]]:
-    """Parse a Bayesian network specification (.net) and return joint probability list.
+def load_network_file(file_path: str, variable_names: Optional[List[str]] = None):  # dynamic return signature for compatibility
+    """Dispatch to legacy binary network parser or new multi-valued parser based on syntax.
 
-    Format:
-        variables: A, B, C ...
-        A : None
-        1: 0.3   # P(A=1)
-        B : A
-        1: 0.8   # P(B=1|A=1)
-        0: 0.1   # P(B=1|A=0)
-
-    For nodes with parents, each line pattern is <parent_assignment_bits>: <prob_of_child_being_1>.
-    Parent assignment bits ordered according to declared parent list.
-    Comments (#) allowed full-line or trailing.
-    Missing parent combinations -> error.
+    New multi-valued markers: '{{' in variable line or '<-' parent specification lines.
+    Returns either (num_variables, joint_probs, variable_names) for legacy or
+    (num_variables, joint_probs_full, variable_names, variable_states) for multi-valued
+    where joint_probs_full enumerates full joint (Π card_i entries) for constructor path.
     """
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"File not found: {file_path}")
-
     with open(file_path, 'r') as f:
-        raw_lines = f.readlines()
+        raw = f.read()
+    # Simple detection
+    if ' <- ' in raw or '{' in raw:
+        return _load_network_file_multivalued(raw, variable_names)
+    else:
+        return _load_network_file_binary(raw, variable_names)
 
-    # Preprocess: strip comments and skip blanks
+
+def _load_network_file_binary(raw_text: str, variable_names: Optional[List[str]]):
+    """Previous binary-only implementation extracted and adapted for dispatch."""
+    raw_lines = raw_text.splitlines()
     cleaned = []
     file_vars = []
     for line_num, raw in enumerate(raw_lines, 1):
@@ -180,32 +179,24 @@ def load_network_file(file_path: str, variable_names: Optional[List[str]] = None
             line = line.split('#',1)[0].strip()
             if not line:
                 continue
-        # Support multiple variable declarations
         if line.lower().startswith('variable '):
             var_name = line[len('variable '):].split()[0].strip()
             if var_name:
                 file_vars.append(var_name)
             continue
         cleaned.append((line_num, line))
-
-    # Support legacy 'variables:' line as well
     if cleaned and cleaned[0][1].lower().startswith('variables:'):
         first = cleaned[0][1]
         file_vars = [v.strip() for v in first[len('variables:'):].split(',') if v.strip()]
         cleaned = cleaned[1:]
-
     if not file_vars:
         raise ValueError("No variables declared in network file (use 'variable NAME' or 'variables: ...')")
-
     names_to_use = variable_names or file_vars
     num_variables = len(names_to_use)
     name_index = {n: i for i,n in enumerate(names_to_use)}
-
-    # Parse blocks: each block starts with '<Child>: <parents or None>' then CPT lines until next block or EOF
     idx = 0
     parents_map = {}
-    cpt_map = {}  # child -> dict[parent_assignment_tuple] = P(child=1 | parents)
-
+    cpt_map = {}
     while idx < len(cleaned):
         line_num, line = cleaned[idx]
         if ':' not in line:
@@ -228,20 +219,15 @@ def load_network_file(file_path: str, variable_names: Optional[List[str]] = None
                     raise ValueError(f"Variable '{child}' cannot be its own parent (line {line_num})")
         parents_map[child] = parents
         idx += 1
-
         local_cpt = {}
         needed = 1 if len(parents) == 0 else 2 ** len(parents)
-
         while idx < len(cleaned):
             ln, lcontent = cleaned[idx]
-            # Heuristic: a new header starts with a token that is a declared variable followed by ':' and not a pure 0/1 pattern appropriate for parent count we still need.
             if ':' in lcontent:
                 candidate_left = lcontent.split(':',1)[0].strip()
                 if candidate_left in name_index and (len(parents) == 0 or not (set(candidate_left) <= {'0','1'} and len(candidate_left)==len(parents))):
-                    # Start of next variable block
                     break
             if len(parents) == 0:
-                # Accept either '1: 0.001' or just '0.001'
                 if ':' in lcontent:
                     left, right = [x.strip() for x in lcontent.split(':',1)]
                     if left not in {'0','1'}:
@@ -256,7 +242,6 @@ def load_network_file(file_path: str, variable_names: Optional[List[str]] = None
                     idx += 1
                     break
                 else:
-                    # Single value line: treat as P(child=1)
                     try:
                         pval = float(lcontent)
                     except ValueError:
@@ -286,19 +271,14 @@ def load_network_file(file_path: str, variable_names: Optional[List[str]] = None
                 idx += 1
                 if len(local_cpt) == needed:
                     break
-
         if len(parents) == 0 and len(local_cpt) != 1:
             raise ValueError(f"Parentless variable {child} must have exactly one probability line")
         if len(parents) > 0 and len(local_cpt) != needed:
             raise ValueError(f"Incomplete CPT for {child}; expected {needed} entries, got {len(local_cpt)}")
         cpt_map[child] = local_cpt
-
-    # Ensure every declared variable was defined
     for var in names_to_use:
         if var not in parents_map:
             raise ValueError(f"Variable '{var}' declared but no CPT provided")
-
-    # Build joint probabilities by iterating over all assignments
     joint_probs_dict = {}
     for assignment_index in range(2 ** num_variables):
         bits = [(assignment_index >> (num_variables - i - 1)) & 1 for i in range(num_variables)]
@@ -313,16 +293,213 @@ def load_network_file(file_path: str, variable_names: Optional[List[str]] = None
             if prob == 0.0:
                 break
         joint_probs_dict[tuple(bits)] = prob
-
-    # Normalize to handle rounding/consistency
     total = sum(joint_probs_dict.values())
     if total <= 0:
         raise ValueError("Total probability computed from network is zero")
     if abs(total - 1.0) > 1e-8:
         for k in joint_probs_dict:
             joint_probs_dict[k] /= total
-
-    # Convert to list the ProbabilitySystem expects (omit last lexicographic combination)
     sorted_combinations = sorted(joint_probs_dict.keys())
     joint_probs = [joint_probs_dict[c] for c in sorted_combinations[:-1]]
-    return num_variables, joint_probs, names_to_use
+    return len(names_to_use), joint_probs, names_to_use
+
+
+def _load_network_file_multivalued(raw_text: str, variable_names: Optional[List[str]]):
+    """Parse new multi-valued network syntax.
+
+    Syntax summary:
+        variable VarName {state1, state2, ...}
+        variable BoolVar            # implies binary {0,1}
+        Child <- None
+        Child <- (Parent1, Parent2)
+        CPT lines root: state: prob
+        CPT lines child: (child_state | p1_state, p2_state, ...) : prob
+    For each parent assignment, probabilities over child states must sum to 1 (missing entries contribute 0).
+    """
+    lines_raw = raw_text.splitlines()
+    # Strip comments and retain (lineno, content)
+    processed: List[Tuple[int,str]] = []
+    for ln, raw in enumerate(lines_raw, 1):
+        line = raw.strip()
+        if not line or line.startswith('#'):
+            continue
+        if '#' in line:
+            line = line.split('#',1)[0].strip()
+            if not line:
+                continue
+        processed.append((ln, line))
+
+    # First pass: variable declarations
+    variable_states: Dict[str, List[str]] = {}
+    order: List[str] = []
+    remaining: List[Tuple[int,str]] = []
+    for ln, line in processed:
+        if line.lower().startswith('variable '):
+            rest = line[len('variable '):].strip()
+            if '{' in rest and '}' in rest:
+                name, states_part = rest.split('{',1)
+                name = name.strip()
+                states_str = states_part.split('}',1)[0]
+                states = [s.strip() for s in states_str.split(',') if s.strip()]
+                if len(states) < 2:
+                    raise ValueError(f"Variable {name} must have at least two states at line {ln}")
+                if name in variable_states:
+                    raise ValueError(f"Duplicate variable declaration {name} line {ln}")
+                variable_states[name] = states
+                order.append(name)
+            else:
+                name = rest.split()[0]
+                if name in variable_states:
+                    raise ValueError(f"Duplicate variable declaration {name} line {ln}")
+                variable_states[name] = ["0","1"]  # implicit boolean
+                order.append(name)
+        else:
+            remaining.append((ln,line))
+    if not order:
+        raise ValueError("No variables declared in multi-valued network file")
+    if variable_names:
+        # Optionally override order subset (must match length)
+        if len(variable_names) != len(order):
+            raise ValueError("Provided variable_names length mismatch in network parse")
+        order = variable_names
+    name_index = {n:i for i,n in enumerate(order)}
+
+    # Second pass: parent declarations and CPTs
+    parents: Dict[str, List[str]] = {}
+    cpt_entries: Dict[str, Dict[Tuple[int, ...], Dict[int,float]]] = {}
+    # structure: child -> parent_state_index_tuple -> {child_state_index: prob}
+    current_child = None
+    for ln, line in remaining:
+        if '<-' in line:
+            left, right = [x.strip() for x in line.split('<-',1)]
+            child = left
+            if child not in name_index:
+                raise ValueError(f"Unknown child '{child}' at line {ln}")
+            if child in parents:
+                raise ValueError(f"Duplicate parent assignment for {child} (line {ln})")
+            right = right.strip()
+            if right.lower() == 'none':
+                plist: List[str] = []
+            else:
+                if not (right.startswith('(') and right.endswith(')')):
+                    raise ValueError(f"Parent list for {child} must be in parentheses at line {ln}")
+                inner = right[1:-1].strip()
+                plist = [p.strip() for p in inner.split(',') if p.strip()]
+                for p in plist:
+                    if p not in name_index:
+                        raise ValueError(f"Unknown parent '{p}' for child {child} (line {ln})")
+                    if p == child:
+                        raise ValueError(f"Variable {child} cannot be its own parent (line {ln})")
+            parents[child] = plist
+            cpt_entries[child] = {}
+            current_child = child
+            continue
+        # CPT line expected
+        if current_child is None:
+            raise ValueError(f"CPT line without preceding child declaration at line {ln}: {line}")
+        # Root variable line: state: prob
+        if line.startswith('('):
+            # (child_state | parent_state1, parent_state2, ...) : prob
+            if ')' not in line or ':' not in line:
+                raise ValueError(f"Invalid CPT tuple line at {ln}: {line}")
+            tuple_part, prob_part = line.split(':',1)
+            prob_str = prob_part.strip()
+            try:
+                pval = float(prob_str)
+            except ValueError:
+                raise ValueError(f"Invalid probability '{prob_str}' at line {ln}")
+            inside = tuple_part.strip()[1:-1].strip()  # remove parentheses
+            if '|' not in inside:
+                raise ValueError(f"Missing '|' in CPT entry at line {ln}")
+            left_state, right_states = [x.strip() for x in inside.split('|',1)]
+            child_state = left_state
+            parent_state_tokens = [t.strip() for t in right_states.split(',') if t.strip()]
+            plist = parents[current_child]
+            if len(parent_state_tokens) != len(plist):
+                raise ValueError(f"Parent state count mismatch at line {ln}")
+            # Map state names to indices
+            child_state_idx = _state_index(variable_states, current_child, child_state, ln)
+            parent_state_indices = []
+            for p_name, s_name in zip(plist, parent_state_tokens):
+                parent_state_indices.append(_state_index(variable_states, p_name, s_name, ln))
+            parent_tuple = tuple(parent_state_indices)
+            slot = cpt_entries[current_child].setdefault(parent_tuple, {})
+            if child_state_idx in slot:
+                raise ValueError(f"Duplicate CPT probability for {current_child} state {child_state} at line {ln}")
+            if not (0 <= pval <= 1):
+                raise ValueError(f"Probability out of range at line {ln}")
+            slot[child_state_idx] = pval
+        else:
+            # Assume root variable line: state: prob
+            if ':' not in line:
+                raise ValueError(f"Invalid root CPT line at {ln}: {line}")
+            state_part, prob_part = [x.strip() for x in line.split(':',1)]
+            plist = parents.get(current_child, [])
+            if plist:
+                raise ValueError(f"Non-parenthesized CPT line but {current_child} has parents (line {ln})")
+            child_state = state_part
+            pval = float(prob_part)
+            child_state_idx = _state_index(variable_states, current_child, child_state, ln)
+            slot = cpt_entries[current_child].setdefault((), {})
+            if child_state_idx in slot:
+                raise ValueError(f"Duplicate root CPT entry for state {child_state} line {ln}")
+            if not (0 <= pval <= 1):
+                raise ValueError(f"Probability out of range at line {ln}")
+            slot[child_state_idx] = pval
+    # Ensure each variable has a parent declaration
+    for v in order:
+        if v not in parents:
+            raise ValueError(f"Variable {v} declared but no parent specification '<-' found")
+    # Validate probability sums per parent combination (must sum to 1.0)
+    for child, parent_dict in cpt_entries.items():
+        card_child = len(variable_states[child])
+        # build all parent combinations
+        plist = parents[child]
+        parent_cards = [len(variable_states[p]) for p in plist]
+        if plist:
+            all_parent_assignments = list(itertools.product(*[range(c) for c in parent_cards]))
+        else:
+            all_parent_assignments = [()]
+        for pt in all_parent_assignments:
+            probs_map = parent_dict.get(pt, {})
+            total_p = sum(probs_map.get(s, 0.0) for s in range(card_child))
+            if abs(total_p - 1.0) > 1e-8:
+                raise ValueError(f"Probabilities for {child} given parents {plist} assignment {pt} sum to {total_p}, not 1.0")
+    # Build joint distribution via factorization (enumerate all assignments)
+    cards = [len(variable_states[v]) for v in order]
+    all_assignments = itertools.product(*[range(c) for c in cards])
+    name_to_states = {v: variable_states[v] for v in order}
+    joint: Dict[Tuple[int,...], float] = {}
+    for assignment in all_assignments:
+        prob = 1.0
+        for vidx, var_name in enumerate(order):
+            state_idx = assignment[vidx]
+            plist = parents[var_name]
+            parent_state_indices = tuple(assignment[order.index(p)] for p in plist)
+            # fetch p(child_state | parent_tuple)
+            entry = cpt_entries[var_name].get(parent_state_indices, {})
+            p_state = entry.get(state_idx, 0.0)
+            prob *= p_state
+            if prob == 0.0:
+                break
+        joint[assignment] = prob
+    total = sum(joint.values())
+    if total <= 0:
+        raise ValueError("Total joint probability zero; check CPTs")
+    # Normalize minor deviation
+    if abs(total - 1.0) > 1e-8:
+        for k in list(joint.keys()):
+            joint[k] /= total
+    joint_list = [joint[a] for a in sorted(joint.keys())]
+    # Return extended signature
+    variable_states_ordered = [variable_states[v] for v in order]
+    return len(order), joint_list, order, variable_states_ordered
+
+
+def _state_index(var_states: Dict[str, List[str]], var: str, state: str, ln: int) -> int:
+    if var not in var_states:
+        raise ValueError(f"Unknown variable '{var}' at line {ln}")
+    states = var_states[var]
+    if state not in states:
+        raise ValueError(f"Unknown state '{state}' for variable '{var}' (line {ln})")
+    return states.index(state)

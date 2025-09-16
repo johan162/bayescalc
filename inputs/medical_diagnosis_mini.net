@@ -1,0 +1,110 @@
+# Medical diagnosis mini: staged Disease drives test & symptoms; Treatment depends on combined evidence (multi-valued diagnostic reasoning).
+# Medical Diagnosis Mini Network (5 variables, multi-valued)
+# Variables:
+#   Disease      {None, Mild, Severe}
+#   TestResult   {Negative, WeakPos, StrongPos}
+#   SymptomA     {Absent, Mild, Strong}
+#   SymptomB     {Absent, Present}
+#   Treatment    {None, Basic, Aggressive}
+# Structure:
+#   Disease -> TestResult
+#   Disease -> SymptomA
+#   Disease -> SymptomB
+#   Disease, SymptomA, SymptomB -> Treatment
+
+variable Disease {None, Mild, Severe}
+variable TestResult {Negative, WeakPos, StrongPos}
+variable SymptomA {Absent, Mild, Strong}
+variable SymptomB {Absent, Present}
+variable Treatment {None, Basic, Aggressive}
+
+Disease <- None
+None: 0.7
+Mild: 0.2
+Severe: 0.1
+
+TestResult <- (Disease)
+(Negative | None): 0.95
+(WeakPos | None): 0.04
+(StrongPos | None): 0.01
+(Negative | Mild): 0.20
+(WeakPos | Mild): 0.55
+(StrongPos | Mild): 0.25
+(Negative | Severe): 0.05
+(WeakPos | Severe): 0.25
+(StrongPos | Severe): 0.70
+
+SymptomA <- (Disease)
+(Absent | None): 0.85
+(Mild | None): 0.12
+(Strong | None): 0.03
+(Absent | Mild): 0.35
+(Mild | Mild): 0.45
+(Strong | Mild): 0.20
+(Absent | Severe): 0.10
+(Mild | Severe): 0.40
+(Strong | Severe): 0.50
+
+SymptomB <- (Disease)
+(Absent | None): 0.9
+(Present | None): 0.1
+(Absent | Mild): 0.6
+(Present | Mild): 0.4
+(Absent | Severe): 0.3
+(Present | Severe): 0.7
+
+Treatment <- (Disease, SymptomA, SymptomB)
+(None | None,Absent,Absent): 0.95
+(Basic | None,Absent,Absent): 0.05
+(Aggressive | None,Absent,Absent): 0.00
+(None | None,Absent,Present): 0.90
+(Basic | None,Absent,Present): 0.10
+(Aggressive | None,Absent,Present): 0.00
+(None | None,Mild,Absent): 0.90
+(Basic | None,Mild,Absent): 0.10
+(Aggressive | None,Mild,Absent): 0.00
+(None | None,Mild,Present): 0.85
+(Basic | None,Mild,Present): 0.15
+(Aggressive | None,Mild,Present): 0.00
+(None | None,Strong,Absent): 0.80
+(Basic | None,Strong,Absent): 0.20
+(Aggressive | None,Strong,Absent): 0.00
+(None | None,Strong,Present): 0.75
+(Basic | None,Strong,Present): 0.25
+(Aggressive | None,Strong,Present): 0.00
+(None | Mild,Absent,Absent): 0.60
+(Basic | Mild,Absent,Absent): 0.35
+(Aggressive | Mild,Absent,Absent): 0.05
+(None | Mild,Absent,Present): 0.50
+(Basic | Mild,Absent,Present): 0.40
+(Aggressive | Mild,Absent,Present): 0.10
+(None | Mild,Mild,Absent): 0.45
+(Basic | Mild,Mild,Absent): 0.45
+(Aggressive | Mild,Mild,Absent): 0.10
+(None | Mild,Mild,Present): 0.35
+(Basic | Mild,Mild,Present): 0.50
+(Aggressive | Mild,Mild,Present): 0.15
+(None | Mild,Strong,Absent): 0.30
+(Basic | Mild,Strong,Absent): 0.55
+(Aggressive | Mild,Strong,Absent): 0.15
+(None | Mild,Strong,Present): 0.20
+(Basic | Mild,Strong,Present): 0.55
+(Aggressive | Mild,Strong,Present): 0.25
+(None | Severe,Absent,Absent): 0.30
+(Basic | Severe,Absent,Absent): 0.50
+(Aggressive | Severe,Absent,Absent): 0.20
+(None | Severe,Absent,Present): 0.20
+(Basic | Severe,Absent,Present): 0.50
+(Aggressive | Severe,Absent,Present): 0.30
+(None | Severe,Mild,Absent): 0.15
+(Basic | Severe,Mild,Absent): 0.50
+(Aggressive | Severe,Mild,Absent): 0.35
+(None | Severe,Mild,Present): 0.10
+(Basic | Severe,Mild,Present): 0.45
+(Aggressive | Severe,Mild,Present): 0.45
+(None | Severe,Strong,Absent): 0.05
+(Basic | Severe,Strong,Absent): 0.35
+(Aggressive | Severe,Strong,Absent): 0.60
+(None | Severe,Strong,Present): 0.02
+(Basic | Severe,Strong,Present): 0.28
+(Aggressive | Severe,Strong,Present): 0.70
