@@ -393,10 +393,41 @@ class ProbabilitySystem:
         print(header)
         print("-" * len(header))
 
-        for values, prob in sorted(self.joint_probabilities.items()):
+        sorted_entries = sorted(self.joint_probabilities.items())
+        
+        # Limit to first 64 rows to avoid overwhelming output
+        max_rows = 64
+        entries_to_show = sorted_entries[:max_rows]
+
+        for values, prob in entries_to_show:
             row = " | ".join(str(val) for val in values)
             from .formatting import fmt
             print(f"{row} | {fmt(prob)}")
+        
+        # Show summary if table was truncated
+        total_entries = len(sorted_entries)
+        if total_entries > max_rows:
+            print(f"\n... (showing first {max_rows} of {total_entries} entries)")
+            print("Use 'table' command to see the full table.")
+
+    def pretty_print_joint_table_full(self):
+        """Print the complete joint probability table without row limits."""
+        print("\nFull Joint Probability Table:")
+        print("=============================\n")
+
+        header = " | ".join(self.variable_names) + " | Probability"
+        print(header)
+        print("-" * len(header))
+
+        sorted_entries = sorted(self.joint_probabilities.items())
+
+        for values, prob in sorted_entries:
+            row = " | ".join(str(val) for val in values)
+            from .formatting import fmt
+            print(f"{row} | {fmt(prob)}")
+        
+        total_entries = len(sorted_entries)
+        print(f"\nTotal entries: {total_entries}")
 
     def pretty_print_marginals(self):
         print("\nMarginal Probabilities:")
