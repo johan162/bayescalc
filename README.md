@@ -1118,5 +1118,4 @@ Purpose: fast recall of common patterns without scanning the full documentation.
 - Using `IsIndep` when supports are tiny—floating noise may mislead; inspect raw probabilities.
 - Confusing `P(~A)` with `1-P(A)` (they're equal, but direct query avoids accumulation error when P(A) computed by summing many small cells).
 
----
-Use this sheet interactively: after loading a file, you can paste lines directly (one at a time) into the CLI.
+
