@@ -2,7 +2,8 @@
 **/*.code-workspace
 .idea/
 **/*.pyc
-__pycache__/*.py
+__pycache__/
+**/__pycache__/
 .venv/
 env/
 dist/
