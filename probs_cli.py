@@ -38,8 +38,16 @@ COMMANDS = [
     },
     {"cmd": "marginals", "summary": "Print all marginal probabilities"},
     {
-        "cmd": "joint_probs | joint_table",
-        "summary": "Print joint probability table",
+        "cmd": "joint_probs",
+        "summary": "Print joint probability table (first 64 rows)",
+    },
+    {
+        "cmd": "joint_table",
+        "summary": "Print complete joint probability table (all rows)",
+    },
+    {
+        "cmd": "table",
+        "summary": "Alias for joint_table (print complete joint probability table)",
     },
     {"cmd": "independence", "summary": "Print independence table for all pairs"},
     {
@@ -103,6 +111,14 @@ def _print_joint_table(prob_system: ProbabilitySystem):
         prob_system.pretty_print_joint_table()
     else:
         probs_ui.pretty_print_joint_table(prob_system.variable_names, prob_system.joint_probabilities)
+
+
+def _print_joint_table_full(prob_system: ProbabilitySystem):
+    """Print the full joint probability table without row limits."""
+    if hasattr(prob_system, "pretty_print_joint_table_full"):
+        prob_system.pretty_print_joint_table_full()
+    else:
+        probs_ui.pretty_print_joint_table_full(prob_system.variable_names, prob_system.joint_probabilities)
 
 
 def _print_marginals(prob_system: ProbabilitySystem):
@@ -726,8 +742,14 @@ def execute_command(prob_system: ProbabilitySystem, query: str):
             return f"Probabilities saved to {filename}"
         except Exception as e:
             return f"Error saving file: {e}"
-    if low == "joint_probs" or low == "joint_table":
+    if low == "joint_probs":
         _print_joint_table(prob_system)
+        return None
+    if low == "joint_table":
+        _print_joint_table_full(prob_system)
+        return None
+    if low == "table":
+        _print_joint_table_full(prob_system)
         return None
 
     # Entropy command: entropy, entropy(A), entropy(A,B base=2)
