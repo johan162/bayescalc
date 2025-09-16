@@ -1,13 +1,13 @@
-# Bayesian Network Calcultor
+# Bayesian Network Calculator
 
 ## 1. Overview
 
-This script helps with the definition and calculations with Bayesian networks. 
+This script helps with the definition and calculations using Bayesian networks. 
 
- - The calculator implements a Bayesian contingency table system that enables users to compute various types of probabilities and statistical independence tests in addition to some information theorethical calculations.
+ - The calculator implements a Bayesian contingency table system that enables users to compute various types of probabilities, conditional probabilities and statistical independence tests in addition to some information theorethical calculations.
  - It allows easy definition of network from either JPT and CPT tables.  
- - It allows the usage of standard mathematical notation when doing calculations (see below). 
- - It included are a number of pre-defined bayesian network common in literature as illustrations of various property of BN.
+ - It allows the usage of standard mathematical probability notations when doing calculations (see below). 
+ - It includes a number of pre-defined bayesian networks common in lthe iterature as illustrations of various property of BN.
 
 
 ### Function and Usage
@@ -40,12 +40,12 @@ Type 'help' to see available commands, 'quit' (or 'exit') to exit.
 Query: 
 ```
 
-The input data can either be specified interactively (which is tedious) or read from a file that can either have the format of a joint probability table (possible sparse) or as a number of conditional probability tables which specifies a Bayesian network. The Bayesian network format is often the simplest way to specify larger networks
-as it allows the sanme data to be specified in a more conscise format. The precise format is described in later sections in this document. Internally both input methods will establish a complete joint distribution table of size 2^N where N is the number of variables.
+The input data can either be specified interactively (which is a bit tedious) or read from a file that can either have the format of a joint probability table (possibly sparse) or as a number of conditional probability tables which specifies a Bayesian network. The Bayesian network format is often the simplest way to specify the system
+as it allows the same information to be specified in a more conscise format. The precise format is described in later sections in this document. Internally both input methods will establish a complete joint distribution table of size 2^N where N is the number of variables. In terms of performance the system can easily work with networks up to 20 variables on a 8GB RAM computer.
 
 The scipt provides both public APIs as well as a CLI interface for interactive experiments.
 
-Some quick examples to give a sense of what can be calculated (this is not an exhaustive list)
+Some quick examples will give a sense of what can be calculated (this is not an exhaustive list)
 
 1. `P(A)` — Marginal probability that variable `A` equals 1.
 2. `P(~A)` or `P(Not(A))` — Marginal probability that `A` equals 0 (negation supported with `~`).
@@ -795,7 +795,25 @@ Interesting Investigations:
 - Influence of risk factors: `P(C=1|S=1)` vs `P(C=1|S=0)`; similarly for pollution states.
 - Information gain: compare `entropy(C)` and `conditional_entropy(C|X)` and with both findings.
 
-### 10. `traffic.net` (RushHour / Accident / Traffic / Late)
+### 10. `insurance_network_small.net` (Insurance Network - 10 variables)
+Variables: Age, SocioEcon, GoodStudent, MakeModel, CarValue, Antilock, Airbag, Accident, ThisCarDam, MedCost (10 total)
+
+Key Properties:
+- A simplified version of the well-known Insurance Bayesian network used in AI research for benchmarking inference algorithms.
+- Models relationships between demographics (Age, SocioEcon), vehicle characteristics (MakeModel, CarValue, safety features), driving behavior, accidents, and insurance costs.
+- Demonstrates complex multi-layer dependencies: demographics influence vehicle choices and student status, vehicle features affect accident probability, accidents determine damage and medical costs.
+- Contains multiple types of relationships: causal chains, common causes, and converging evidence patterns.
+- Useful for testing scalability with moderate-sized networks (2^10 = 1024 joint probability entries).
+
+Suggested Queries:
+- Demographics and costs: `P(MedCost=1|Age=0)` vs `P(MedCost=1|Age=1)` (young vs adult medical costs)
+- Safety features effectiveness: `P(Accident=1|Antilock=1)` vs `P(Accident=1|Antilock=0)`
+- Vehicle value impact: `P(ThisCarDam=1|CarValue=1,Accident=1)` vs `P(ThisCarDam=1|CarValue=0,Accident=1)`
+- Independence checks: `IsIndep(Age,MakeModel)` vs `IsCondIndep(Accident,MedCost|Age)`
+
+See `inputs/insurance_network_small.net` for the complete 10-variable network definition.
+
+### 11. `traffic.net` (RushHour / Accident / Traffic / Late)
 Variables: `RushHour (RH)`, `Accident (A)`, `Traffic (T)`, `Late (L)`.
 
 Structure:
