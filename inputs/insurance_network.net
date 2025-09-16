@@ -1,0 +1,205 @@
+# Insurance Bayesian Network (27 variables)
+# This is a well-known benchmark network used in Bayesian network research
+# 
+# PURPOSE:
+# The Insurance network models various factors that influence car insurance costs and claims.
+# It considers demographics, driving behavior, vehicle characteristics, and accident scenarios
+# to predict insurance-related outcomes like liability costs, medical costs, and theft risk.
+#
+# VARIABLES (27 total):
+# Demographics: Age, SocioEcon, GoodStudent, RiskAversion
+# Driving: Antilock, DrivingSkill, MakeModel, CarValue, Airbag, DrivQuality
+# Vehicle: VehicleYear, Mileage, HomeBase, AntiTheft
+# Accidents: Accident, ThisCarDam, OtherCarCost, ThisCarCost
+# Medical: Cushioning, MedCost, ILiCost
+# Legal: Propery_Damage, OwnDamage, LibCost, OtherCar
+# Theft: Theft, CarType, SeniorTrain
+# External: RespCoverage
+#
+# The network demonstrates complex dependencies between personal characteristics,
+# vehicle properties, and insurance claim costs, making it useful for testing
+# inference algorithms and probabilistic reasoning systems.
+
+# Variable declarations using the new format
+variable Age
+variable SocioEcon  
+variable GoodStudent
+variable RiskAversion
+variable Antilock
+variable DrivingSkill
+variable MakeModel
+variable CarValue
+variable Airbag
+variable DrivQuality
+variable VehicleYear
+variable Mileage
+variable HomeBase
+variable AntiTheft
+variable Accident
+variable ThisCarDam
+variable OtherCarCost
+variable ThisCarCost
+variable Cushioning
+variable MedCost
+variable ILiCost
+variable PropertyDamage
+variable OwnDamage
+variable LibCost
+variable OtherCar
+variable Theft
+variable CarType
+
+# Conditional Probability Tables
+
+# Root nodes (no parents)
+Age : None
+0.3  # P(Age=Young)
+
+SocioEcon : None
+0.4  # P(SocioEcon=High)
+
+# Nodes dependent on Age
+GoodStudent : Age
+1: 0.8  # P(GoodStudent=True | Age=Adolescent)
+0: 0.1  # P(GoodStudent=True | Age=Adult)
+
+RiskAversion : Age, SocioEcon
+11: 0.8  # P(RiskAversion=Psychopath | Age=Adolescent, SocioEcon=High)
+10: 0.6  # P(RiskAversion=Psychopath | Age=Adolescent, SocioEcon=Low)
+01: 0.2  # P(RiskAversion=Psychopath | Age=Adult, SocioEcon=High) 
+00: 0.1  # P(RiskAversion=Psychopath | Age=Adult, SocioEcon=Low)
+
+# Vehicle characteristics
+MakeModel : None
+0.2  # P(MakeModel=Luxury)
+
+CarValue : MakeModel
+1: 0.8  # P(CarValue=Million | MakeModel=Luxury)
+0: 0.1  # P(CarValue=Million | MakeModel=Economy)
+
+VehicleYear : None
+0.6  # P(VehicleYear=Current)
+
+Antilock : VehicleYear, MakeModel
+11: 0.95  # P(Antilock=True | VehicleYear=Current, MakeModel=Luxury)
+10: 0.8   # P(Antilock=True | VehicleYear=Current, MakeModel=Economy)
+01: 0.3   # P(Antilock=True | VehicleYear=Older, MakeModel=Luxury)
+00: 0.1   # P(Antilock=True | VehicleYear=Older, MakeModel=Economy)
+
+Airbag : VehicleYear, MakeModel
+11: 0.99  # P(Airbag=True | VehicleYear=Current, MakeModel=Luxury)
+10: 0.9   # P(Airbag=True | VehicleYear=Current, MakeModel=Economy)
+01: 0.5   # P(Airbag=True | VehicleYear=Older, MakeModel=Luxury)
+00: 0.2   # P(Airbag=True | VehicleYear=Older, MakeModel=Economy)
+
+Mileage : None
+0.7  # P(Mileage=FiftyThou)
+
+HomeBase : None
+0.3  # P(HomeBase=Secure)
+
+AntiTheft : HomeBase, CarValue
+11: 0.9   # P(AntiTheft=True | HomeBase=Secure, CarValue=Million)
+10: 0.95  # P(AntiTheft=True | HomeBase=Secure, CarValue=FiftyThou)
+01: 0.6   # P(AntiTheft=True | HomeBase=City, CarValue=Million)
+00: 0.3   # P(AntiTheft=True | HomeBase=City, CarValue=FiftyThou)
+
+# Driving skill and behavior
+DrivingSkill : Age, SocioEcon
+11: 0.8  # P(DrivingSkill=Expert | Age=Adolescent, SocioEcon=High)
+10: 0.3  # P(DrivingSkill=Expert | Age=Adolescent, SocioEcon=Low)
+01: 0.9  # P(DrivingSkill=Expert | Age=Adult, SocioEcon=High)
+00: 0.6  # P(DrivingSkill=Expert | Age=Adult, SocioEcon=Low)
+
+DrivQuality : RiskAversion, DrivingSkill
+11: 0.9  # P(DrivQuality=Poor | RiskAversion=Psychopath, DrivingSkill=Expert)
+10: 0.95 # P(DrivQuality=Poor | RiskAversion=Psychopath, DrivingSkill=SubStandard)
+01: 0.1  # P(DrivQuality=Poor | RiskAversion=Normal, DrivingSkill=Expert)
+00: 0.4  # P(DrivQuality=Poor | RiskAversion=Normal, DrivingSkill=SubStandard)
+
+# Accidents and damage
+Accident : DrivQuality, Mileage, Antilock
+111: 0.4  # P(Accident=Severe | DrivQuality=Poor, Mileage=FiftyThou, Antilock=True)
+110: 0.6  # P(Accident=Severe | DrivQuality=Poor, Mileage=FiftyThou, Antilock=False)
+101: 0.3  # P(Accident=Severe | DrivQuality=Poor, Mileage=Domino, Antilock=True)
+100: 0.5  # P(Accident=Severe | DrivQuality=Poor, Mileage=Domino, Antilock=False)
+011: 0.1  # P(Accident=Severe | DrivQuality=Normal, Mileage=FiftyThou, Antilock=True)
+010: 0.2  # P(Accident=Severe | DrivQuality=Normal, Mileage=FiftyThou, Antilock=False)
+001: 0.05 # P(Accident=Severe | DrivQuality=Normal, Mileage=Domino, Antilock=True)
+000: 0.1  # P(Accident=Severe | DrivQuality=Normal, Mileage=Domino, Antilock=False)
+
+Cushioning : Airbag, Accident
+11: 0.9  # P(Cushioning=Good | Airbag=True, Accident=Severe)
+10: 0.8  # P(Cushioning=Good | Airbag=True, Accident=Mild)
+01: 0.4  # P(Cushioning=Good | Airbag=False, Accident=Severe)
+00: 0.7  # P(Cushioning=Good | Airbag=False, Accident=Mild)
+
+ThisCarDam : Accident, Theft
+11: 0.95 # P(ThisCarDam=Severe | Accident=Severe, Theft=True)
+10: 0.8  # P(ThisCarDam=Severe | Accident=Severe, Theft=False)
+01: 0.9  # P(ThisCarDam=Severe | Accident=Mild, Theft=True)
+00: 0.1  # P(ThisCarDam=Severe | Accident=Mild, Theft=False)
+
+OtherCar : Accident
+1: 0.8  # P(OtherCar=True | Accident=Severe)
+0: 0.2  # P(OtherCar=True | Accident=Mild)
+
+# Medical costs
+MedCost : Cushioning, Accident, Age
+111: 0.3  # P(MedCost=Thousand | Cushioning=Good, Accident=Severe, Age=Adolescent)
+110: 0.6  # P(MedCost=Thousand | Cushioning=Good, Accident=Severe, Age=Adult)
+101: 0.1  # P(MedCost=Thousand | Cushioning=Good, Accident=Mild, Age=Adolescent)
+100: 0.2  # P(MedCost=Thousand | Cushioning=Good, Accident=Mild, Age=Adult)
+011: 0.7  # P(MedCost=Thousand | Cushioning=Poor, Accident=Severe, Age=Adolescent)
+010: 0.8  # P(MedCost=Thousand | Cushioning=Poor, Accident=Severe, Age=Adult)
+001: 0.2  # P(MedCost=Thousand | Cushioning=Poor, Accident=Mild, Age=Adolescent)
+000: 0.3  # P(MedCost=Thousand | Cushioning=Poor, Accident=Mild, Age=Adult)
+
+ILiCost : Accident
+1: 0.9  # P(ILiCost=Thousand | Accident=Severe)
+0: 0.1  # P(ILiCost=Thousand | Accident=Mild)
+
+# Property and vehicle damage costs
+PropertyDamage : OtherCar
+1: 0.8  # P(PropertyDamage=Severe | OtherCar=True)
+0: 0.1  # P(PropertyDamage=Severe | OtherCar=False)
+
+OtherCarCost : OtherCar, CarValue
+11: 0.9  # P(OtherCarCost=Thousand | OtherCar=True, CarValue=Million)
+10: 0.7  # P(OtherCarCost=Thousand | OtherCar=True, CarValue=FiftyThou)
+01: 0.0  # P(OtherCarCost=Thousand | OtherCar=False, CarValue=Million)
+00: 0.0  # P(OtherCarCost=Thousand | OtherCar=False, CarValue=FiftyThou)
+
+ThisCarCost : ThisCarDam, CarValue
+11: 0.95 # P(ThisCarCost=Thousand | ThisCarDam=Severe, CarValue=Million)
+10: 0.8  # P(ThisCarCost=Thousand | ThisCarDam=Severe, CarValue=FiftyThou)
+01: 0.3  # P(ThisCarCost=Thousand | ThisCarDam=Mild, CarValue=Million)
+00: 0.1  # P(ThisCarCost=Thousand | ThisCarDam=Mild, CarValue=FiftyThou)
+
+# Liability costs
+LibCost : PropertyDamage, OtherCarCost
+11: 0.99 # P(LibCost=Thousand | PropertyDamage=Severe, OtherCarCost=Thousand)
+10: 0.8  # P(LibCost=Thousand | PropertyDamage=Severe, OtherCarCost=TenThou)
+01: 0.6  # P(LibCost=Thousand | PropertyDamage=Mild, OtherCarCost=Thousand)
+00: 0.1  # P(LibCost=Thousand | PropertyDamage=Mild, OtherCarCost=TenThou)
+
+OwnDamage : ThisCarCost
+1: 0.9  # P(OwnDamage=Severe | ThisCarCost=Thousand)
+0: 0.1  # P(OwnDamage=Severe | ThisCarCost=TenThou)
+
+# Theft
+CarType : MakeModel, CarValue
+11: 0.8  # P(CarType=Luxury | MakeModel=Luxury, CarValue=Million)
+10: 0.1  # P(CarType=Luxury | MakeModel=Luxury, CarValue=FiftyThou)
+01: 0.05 # P(CarType=Luxury | MakeModel=Economy, CarValue=Million)
+00: 0.01 # P(CarType=Luxury | MakeModel=Economy, CarValue=FiftyThou)
+
+Theft : AntiTheft, CarType, HomeBase
+111: 0.01 # P(Theft=True | AntiTheft=True, CarType=Luxury, HomeBase=Secure)
+110: 0.05 # P(Theft=True | AntiTheft=True, CarType=Luxury, HomeBase=City)
+101: 0.005 # P(Theft=True | AntiTheft=True, CarType=Economy, HomeBase=Secure)
+100: 0.01 # P(Theft=True | AntiTheft=True, CarType=Economy, HomeBase=City)
+011: 0.1  # P(Theft=True | AntiTheft=False, CarType=Luxury, HomeBase=Secure)
+010: 0.3  # P(Theft=True | AntiTheft=False, CarType=Luxury, HomeBase=City)
+001: 0.02 # P(Theft=True | AntiTheft=False, CarType=Economy, HomeBase=Secure)
+000: 0.05 # P(Theft=True | AntiTheft=False, CarType=Economy, HomeBase=City)

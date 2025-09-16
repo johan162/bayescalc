@@ -5,10 +5,10 @@
 variables: B, E, A, J, M
 
 B : None
-1: 0.001 # P(B)
+0.001 # P(B)
 
 E: None
-1: 0.002 # P(E)
+0.002 # P(E)
 
 A: B, E
 11: 0.95
