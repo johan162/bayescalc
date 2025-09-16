@@ -1,6 +1,6 @@
 PYTHON=.venv/bin/python
 
-.PHONY: test test-pty compile regen-readme inject-readme test-slow test-sample test-all api-ref
+.PHONY: test test-pty compile regen-readme inject-readme test-slow test-sample test-all api-ref build
 
 # Default Python interpreter to use for targets (use virtualenv if present)
 PYTHON ?= .venv/bin/python
@@ -38,6 +38,9 @@ inject-readme: regen-readme
 api-ref:
 	# Generate / update API reference table in ARCHITECTURE.md
 	$(PYTHON) scripts/generate_api_reference.py --file ARCHITECTURE.md
+
+build:
+	$(PYTHON) -m build
 
 seq-demo: export PYTHONPATH := $(CURDIR)
 seq-demo:
