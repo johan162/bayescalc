@@ -53,7 +53,7 @@ This project consists of a modular Python core (`probs_core/`), a feature-rich C
 
 - `Makefile` — Convenience targets (`test`, `test-pty`, `test-slow`, `test-sample`, `inject-readme`).
 
-- `DEVELOPER_GUIDE.md` / `CONTRIBUTING.md` — Process and deep-dive references.
+- `docs/DEVELOPER_GUIDE.md` / `CONTRIBUTING.md` — Process and deep-dive references.
 
 ### Migration and Compatibility
 
@@ -183,7 +183,7 @@ Probability display precision is globally managed in `probs_core/formatting.py` 
 3. Wire a CLI command (update handler dispatch, append to `COMMANDS`).
 4. Regenerate & inject README help block (`make inject-readme`).
 5. Add tests at the lowest viable layer.
-6. Update `DEVELOPER_GUIDE.md` and cheat sheet appendix (README) if user-facing.
+6. Update `docs/DEVELOPER_GUIDE.md` and cheat sheet appendix (docs/Userguide.md) if user-facing.
 
 ## Performance Characteristics & Considerations
 The core enumerates the full joint distribution (O(2^N)). Practical limits reached quickly (>18–20 vars). Current mitigations:
@@ -214,8 +214,9 @@ Future optimizations (roadmap candidates):
 * Mutual Information: I(A;B) derived from entropies over marginal and joint distributions.
 
 ## Cross References
-* `README.md` — User concepts, file formats, example networks.
-* `DEVELOPER_GUIDE.md` — Expanded process/workflow & API tables.
+* `README.md` — Concise project overview and quick start guide.
+* `docs/Userguide.md` — Comprehensive user concepts, file formats, example networks.
+* `docs/DEVELOPER_GUIDE.md` — Expanded process/workflow & API tables.
 * `CONTRIBUTING.md` — PR workflow & checklist.
 * `TESTING.md` — (If present) deeper rationale for test layering.
 * API Table Regeneration: run `make api-ref` to refresh the public `ProbabilitySystem` method table below.

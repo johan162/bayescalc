@@ -1,7 +1,8 @@
-"""Generate a README help section from the COMMANDS descriptor in probs_cli.py.
+"""Generate CLI help section from the COMMANDS descriptor in probs_cli.py.
 
 This script imports the `COMMANDS` list and writes a Markdown snippet to stdout
-or to a specified file. It's intentionally small and safe for use in Makefile
+or to a specified file. It can inject the help section into documentation files
+like the Userguide.md. It's intentionally small and safe for use in Makefile
 recipes.
 """
 import argparse
@@ -84,14 +85,14 @@ def render_markdown(commands):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate README help section from probs_cli.COMMANDS")
+    parser = argparse.ArgumentParser(description="Generate CLI help section from probs_cli.COMMANDS")
     parser.add_argument("--output", "-o", help="Output file (defaults to stdout)")
-    parser.add_argument("--inject", "-i", help="Inject generated section into README file between sentinel markers (path)")
+    parser.add_argument("--inject", "-i", help="Inject generated section into documentation file between sentinel markers (path)")
     parser.add_argument("--dry-run", action="store_true", help="When used with --inject, print the would-be injected content and do not write files")
-    parser.add_argument("--confirm", action="store_true", help="When used with --inject, prompt for confirmation before writing the README file")
+    parser.add_argument("--confirm", action="store_true", help="When used with --inject, prompt for confirmation before writing the documentation file")
     parser.add_argument("--fail-on-missing-markers", action="store_true",
-                        help="If set, abort when the README does not contain the sentinel markers instead of appending the section")
-    parser.add_argument("--backup-dir", help="Directory to store README backups instead of placing .bak next to the README")
+                        help="If set, abort when the documentation file does not contain the sentinel markers instead of appending the section")
+    parser.add_argument("--backup-dir", help="Directory to store documentation backups instead of placing .bak next to the file")
     args = parser.parse_args()
 
     commands = load_commands()
@@ -113,7 +114,7 @@ def main():
                 original = f.read()
             has_markers = (START in original and END in original)
             if args.fail_on_missing_markers and not has_markers:
-                sys.stderr.write("Error: markers not found in README and --fail-on-missing-markers set\n")
+                sys.stderr.write("Error: markers not found in documentation file and --fail-on-missing-markers set\n")
                 sys.exit(2)
             if has_markers:
                 pre, rest = original.split(START, 1)
@@ -132,7 +133,7 @@ def main():
                 print("Aborted by user.")
                 return
 
-        inject_into_readme(args.inject, md, fail_on_missing_markers=args.fail_on_missing_markers, backup_dir=args.backup_dir)
+        inject_into_documentation(args.inject, md, fail_on_missing_markers=args.fail_on_missing_markers, backup_dir=args.backup_dir)
         print(f"Injected CLI help into: {args.inject}")
     elif args.output:
         with open(args.output, "w") as f:
@@ -141,29 +142,29 @@ def main():
         sys.stdout.write(md)
 
 
-def inject_into_readme(readme_path: str, md_content: str, fail_on_missing_markers: bool = False, backup_dir: str | None = None) -> None:
-    """Inject md_content into readme_path between sentinel markers.
+def inject_into_documentation(doc_path: str, md_content: str, fail_on_missing_markers: bool = False, backup_dir: str | None = None) -> None:
+    """Inject md_content into doc_path between sentinel markers.
 
     If markers are not present, append the section at the end. A backup of the
-    original readme is written to <readme_path>.bak.
+    original documentation file is written to <doc_path>.bak.
     """
     import shutil
 
     START = "<!-- CLI_HELP_START -->"
     END = "<!-- CLI_HELP_END -->"
 
-    if not os.path.exists(readme_path):
-        raise FileNotFoundError(readme_path)
+    if not os.path.exists(doc_path):
+        raise FileNotFoundError(doc_path)
 
     # Determine backup path
     if backup_dir:
         os.makedirs(backup_dir, exist_ok=True)
-        backup_path = os.path.join(backup_dir, os.path.basename(readme_path) + ".bak")
+        backup_path = os.path.join(backup_dir, os.path.basename(doc_path) + ".bak")
     else:
-        backup_path = readme_path + ".bak"
-    shutil.copyfile(readme_path, backup_path)
+        backup_path = doc_path + ".bak"
+    shutil.copyfile(doc_path, backup_path)
 
-    with open(readme_path, "r", encoding="utf-8") as f:
+    with open(doc_path, "r", encoding="utf-8") as f:
         original = f.read()
 
     # Add an auto-generated warning banner inside the markers so humans know
@@ -177,7 +178,7 @@ def inject_into_readme(readme_path: str, md_content: str, fail_on_missing_marker
 
     has_markers = (START in original and END in original)
     if fail_on_missing_markers and not has_markers:
-        raise RuntimeError("Markers not found in README and --fail-on-missing-markers set")
+        raise RuntimeError("Markers not found in documentation file and --fail-on-missing-markers set")
 
     if has_markers:
         pre, rest = original.split(START, 1)
@@ -189,7 +190,7 @@ def inject_into_readme(readme_path: str, md_content: str, fail_on_missing_marker
             original += "\n"
         new = original + "\n" + START + "\n" + injected + "\n" + END + "\n"
 
-    with open(readme_path, "w", encoding="utf-8") as f:
+    with open(doc_path, "w", encoding="utf-8") as f:
         f.write(new)
 
 

@@ -25,19 +25,19 @@ compile:
 	# byte-compile all python files for a quick "compilation" speed check
 	$(PYTHON) -m compileall -q .
 
-regen-readme:
-	# regenerate README CLI help section from code
-	$(PYTHON) scripts/generate_readme_help.py > README_CLI.md
+regen-userguide:
+	# regenerate docs/Userguide.md CLI help section from code
+	$(PYTHON) scripts/generate_readme_help.py > USERGUIDE_CLI.md
 
 
-.PHONY: inject-readme
-inject-readme: regen-readme
-	# Inject generated CLI help into README.md between sentinel markers (prompt for confirmation)
-	$(PYTHON) scripts/generate_readme_help.py --inject README.md --confirm
+.PHONY: inject-userguide
+inject-userguide: regen-userguide
+	# Inject generated CLI help into docs/Userguide.md between sentinel markers (prompt for confirmation)
+	$(PYTHON) scripts/generate_readme_help.py --inject docs/Userguide.md --confirm
 
 api-ref:
-	# Generate / update API reference table in ARCHITECTURE.md
-	$(PYTHON) scripts/generate_api_reference.py --file ARCHITECTURE.md
+	# Generate / update API reference table in docs/ARCHITECTURE.md
+	$(PYTHON) scripts/generate_api_reference.py --file docs/ARCHITECTURE.md
 
 build:
 	$(PYTHON) -m build

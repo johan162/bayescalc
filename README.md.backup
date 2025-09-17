@@ -1,464 +1,157 @@
-# BayesCalc -  Bayesian Network Calculator
+# Bayesian Network Calculator
 
+## 1. Overview
 
+This script helps with the definition and calculations using Bayesian networks. 
 
-An interactive command-line tool for Bayesian probability analysis, statistical reasoning, and exploration of probabilistic relationships.
-
-
-
-## OverviewAn interactive command-line tool for Bayesian probability analysis, statistical reasoning, and exploration of probabilistic relationships.## 1. Overview
-
-
-
-BayesCalc allows you to define probability distributions and interactively query conditional probabilities, test independence, compute information-theoretic measures, and explore Bayesian reasoning through an intuitive command-line interface.
-
-
-## OverviewThis script helps with the definition and calculations using Bayesian networks. 
-
-**Key Features:**
-
-- **Natural queries**: Ask questions like `P(Disease|Test)` or `IsIndep(A,B)`
-
-- **Multiple formats**: Support for joint probability tables (`.inp`) and Bayesian networks (`.net`)
-
-- **Rich analysis**: Conditional probabilities, independence testing, entropy measures, sampling
-
-- **Educational focus**: Designed for learning and exploring probabilistic reasoningBayesCalc allows you to define probability distributions and interactively query conditional probabilities, test independence, compute information-theoretic measures, and explore Bayesian reasoning through an intuitive command-line interface. - The calculator implements a Bayesian contingency table system that enables users to compute various types of probabilities, conditional probabilities and statistical independence tests in addition to some information theorethical calculations.
-
-- **Extensive examples**: Built-in library of classic probability problems and paradoxes
-
+ - The calculator implements a Bayesian contingency table system that enables users to compute various types of probabilities, conditional probabilities and statistical independence tests in addition to some information theorethical calculations.
  - It allows easy definition of network from either JPT and CPT tables.  
+ - It allows the usage of standard mathematical probability notations when doing calculations (see below). 
+ - It includes a number of pre-defined bayesian networks common in lthe iterature as illustrations of various property of BN.
 
-## Quick Start
 
-**Key Features:** - It allows the usage of standard mathematical probability notations when doing calculations (see below). 
+### Function and Usage
 
-### Installation
+The main entry point is `probs.py` and the easiest way to start using the calculator and one of the supplied examples is by entering:
 
-```bash- **Natural queries**: Ask questions like `P(Disease|Test)` or `IsIndep(A,B)` - It includes a number of pre-defined bayesian networks common in lthe iterature as illustrations of various property of BN.
 
-# Clone and install dependencies
+```shell
+> python probs.py inputs/medical_test.inp 
+Successfully loaded probability system from file: inputs/medical_test.inp
+Using variable names: Sickness, Test
 
-git clone <repository-url>- **Multiple formats**: Support for joint probability tables (`.inp`) and Bayesian networks (`.net`)
+Joint Probability Table:
+========================
 
-cd bayescalc
+Sickness | Test | Probability
+-----------------------------
+0 | 0 | 0.930600
+0 | 1 | 0.059400
+1 | 0 | 0.000500
+1 | 1 | 0.009500
 
-pip install -r requirements-dev.txt- **Rich analysis**: Conditional probabilities, independence testing, entropy measures, sampling
+Tab completion enabled. Type the first few letters of a variable name and press Tab to complete it. For multi-valued variables you can also type `Variable=` then press Tab to see valid state names (e.g. `Weather=` + Tab suggests `Sunny, Cloudy, Rainy`). Binary variables suggest `0` and `1` when you press Tab after `Var=`.
 
+Listing variables and states:
+You can display all currently loaded variables and their possible states with the `list` command. To focus on a single variable (useful in large networks), supply its name: `list Weather`.
+Examples:
+```
+list          # show every variable and its states
+list Weather  # show only the states for the Weather variable
 ```
 
-- **Educational focus**: Designed for learning and exploring probabilistic reasoning### Function and Usage
+Example Queries:
+Examples: P(Sickness), P(Sickness,Test), P(Sickness|Test)
+          IsIndep(Sickness,Test)
+Type 'help' to see available commands, 'quit' (or 'exit') to exit.
 
-### Basic Usage
-
-```bash- **Extensive examples**: Built-in library of classic probability problems and paradoxes
-
-# Run with an example
-
-python probs.py inputs/medical_test.inpThe main entry point is `probs.py` and the easiest way to start using the calculator and one of the supplied examples is by entering:
-
-
-
-# Interactive session## Quick Start
-
-marginals              # View all marginal probabilities
-
-P(Sickness|Test)        # Query conditional probability
-
-IsIndep(A,B)           # Test independence
-
-entropy                # Compute information content### Installation```shell
-
-help                   # Show all commands
-
-``````bash> python probs.py inputs/medical_test.inp 
-
-
-
-### Example Session# Clone and install dependenciesSuccessfully loaded probability system from file: inputs/medical_test.inp
-
-```bash
-
-$ python probs.py inputs/medical_test.inpgit clone <repository-url>Using variable names: Sickness, Test
-
-> P(Sickness)
-
-0.0100cd bayescalc
-
-> P(Test|Sickness)
-
-0.9500pip install -r requirements-dev.txtJoint Probability Table:
-
-> P(Sickness|Test)
-
-0.1379```========================
-
-> # Despite 95% test accuracy, positive result only 13.8% probability of disease!
-
+Query: 
 ```
 
+## Command Line Usage Quick Reference
 
-
-## File Formats### Basic UsageSickness | Test | Probability
-
-
-
-### Joint Probability Tables (`.inp`)```bash-----------------------------
+You can see these options anytime with `python probs.py --help` (or by supplying a file then `--help`). Below is an inlined copy of the main CLI arguments for convenience.
 
 ```
+usage: probs.py [-h] [--names NAMES [NAMES ...]] [--cmds CMDS] [file]
 
-variables: Sickness, Test# Run with an example0 | 0 | 0.930600
+Positional arguments:
+  file                  Optional path to a probability specification file (.inp joint table or .net Bayesian network). If omitted you'll be prompted or can explore interactively.
 
-# P(Sickness=0,Test=0), P(Sickness=0,Test=1), etc.
-
-00: 0.930500python probs.py inputs/medical_test.inp0 | 1 | 0.059400
-
-01: 0.059400  
-
-10: 0.0005001 | 0 | 0.000500
-
-11: 0.009500
-
-```# Interactive session1 | 1 | 0.009500
-
-
-
-### Bayesian Networks (`.net`)marginals              # View all marginal probabilities
-
-```
-
-variables: Burglary, Earthquake, AlarmP(Sickness|Test)        # Query conditional probabilityTab completion enabled. Type the first few letters of a variable name and press Tab to complete it. For multi-valued variables you can also type `Variable=` then press Tab to see valid state names (e.g. `Weather=` + Tab suggests `Sunny, Cloudy, Rainy`). Binary variables suggest `0` and `1` when you press Tab after `Var=`.
-
-
-
-Burglary:IsIndep(A,B)           # Test independence
-
-parents: None
-
-1: 0.001entropy                # Compute information contentListing variables and states:
-
-
-
-Earthquake:help                   # Show all commandsYou can display all currently loaded variables and their possible states with the `list` command. To focus on a single variable (useful in large networks), supply its name: `list Weather`.
-
-parents: None
-
-1: 0.002```Examples:
-
-
-
-Alarm:```
-
-parents: Burglary, Earthquake
-
-00: 0.001   # P(Alarm=1|Burglary=0,Earthquake=0)### Example Sessionlist          # show every variable and its states
-
-01: 0.290   # P(Alarm=1|Burglary=0,Earthquake=1)
-
-10: 0.940   # P(Alarm=1|Burglary=1,Earthquake=0)```bashlist Weather  # show only the states for the Weather variable
-
-11: 0.950   # P(Alarm=1|Burglary=1,Earthquake=1)
-
-```$ python probs.py inputs/medical_test.inp```
-
-
-
-## Example Networks> P(Sickness)
-
-
-
-Explore classic probability problems:0.0100Example Queries:
-
-```bash
-
-networks                                 # List available examples> P(Test|Sickness)Examples: P(Sickness), P(Sickness,Test), P(Sickness|Test)
-
-python probs.py inputs/sprinkler.net    # Classic Bayesian network
-
-python probs.py inputs/simpsons_paradox.inp    # Simpson's paradox0.9500          IsIndep(Sickness,Test)
-
-python probs.py inputs/monty_hall.inp          # Monty Hall problem
-
-```> P(Sickness|Test)Type 'help' to see available commands, 'quit' (or 'exit') to exit.
-
-
-
-**Available Examples:**0.1379
-
-- Medical testing scenarios (base rate neglect, sequential testing)
-
-- Statistical paradoxes (Simpson's, Berkson's bias)> # Despite 95% test accuracy, positive result only 13.8% probability of disease!Query: 
-
-- Information theory examples (XOR triplet, parity constraints)
-
-- Classic Bayesian networks (sprinkler, alarm, cancer diagnosis)``````
-
-- Multi-valued variables (weather forecasting, student performance)
-
-
-
-## Key Commands
-
-## File Formats## Command Line Usage Quick Reference
-
-| Category | Commands | Purpose |
-
-|----------|----------|---------|
-
-| **Probability** | `P(A)`, `P(A\|B)`, `P(A,B)` | Query probabilities |
-
-| **Independence** | `IsIndep(A,B)`, `IsCondIndep(A,B\|C)` | Test relationships |### Joint Probability Tables (`.inp`)You can see these options anytime with `python probs.py --help` (or by supplying a file then `--help`). Below is an inlined copy of the main CLI arguments for convenience.
-
-| **Information** | `entropy()`, `mutual_info(A,B)` | Information theory |
-
-| **Analysis** | `marginals`, `joint_table`, `sample()` | Explore distributions |```
-
-| **Workflow** | `open file.inp`, `save output.inp` | File operations |
-
-variables: Sickness, Test```
-
-## Documentation
-
-# P(Sickness=0,Test=0), P(Sickness=0,Test=1), etc.usage: probs.py [-h] [--names NAMES [NAMES ...]] [--cmds CMDS] [file]
-
-- **[📖 User Guide](docs/Userguide.md)** - Comprehensive tutorial and reference
-
-- **[🏗️ Architecture](docs/ARCHITECTURE.md)** - Technical implementation details  00: 0.930500
-
-- **[👨‍💻 Developer Guide](docs/DEVELOPER_GUIDE.md)** - Contributing and development setup
-
-- **[🧪 Testing Guide](TESTING.md)** - Test framework and validation01: 0.059400  Positional arguments:
-
-
-
-## Educational Applications10: 0.000500  file                  Optional path to a probability specification file (.inp joint table or .net Bayesian network). If omitted you'll be prompted or can explore interactively.
-
-
-
-**Bayesian Reasoning:**11: 0.009500
-
-- Medical diagnosis and base rate neglect
-
-- Sequential evidence accumulation  ```Optional arguments:
-
-- Prior-to-posterior updating
-
+Optional arguments:
   -h, --help            Show help and exit.
+  --names, -n           One or more custom variable names to apply when loading a joint table (.inp). Provide space-separated names (must match variable count). Ignored for multi-valued .net that already declare variables.
+  --cmds CMDS           Semicolon-separated list of commands to execute non-interactively after loading the file, then exit (unless a REPL-only command requires interaction). Example: --cmds "P(A);entropy;networks;exit".
 
-**Statistical Concepts:**
-
-- Simpson's paradox and confounding variables### Bayesian Networks (`.net`)  --names, -n           One or more custom variable names to apply when loading a joint table (.inp). Provide space-separated names (must match variable count). Ignored for multi-valued .net that already declare variables.
-
-- Selection bias and collider effects
-
-- Markov chains and conditional independence```  --cmds CMDS           Semicolon-separated list of commands to execute non-interactively after loading the file, then exit (unless a REPL-only command requires interaction). Example: --cmds "P(A);entropy;networks;exit".
-
-
-
-**Information Theory:**variables: Burglary, Earthquake, Alarm
-
-- Entropy and uncertainty quantification
-
-- Mutual information and dependenceExamples:
-
-- Value of information in decision making
-
-Burglary:  python probs.py                      # interactive (manual input prompt)
-
-## Requirements
-
-parents: None  python probs.py inputs/medical_test.inp
-
-- Python 3.7+
-
-- Dependencies: `click`, `pytest` (for development)1: 0.001  python probs.py inputs/medical_test.inp --names Sickness Test
-
-- No external mathematical libraries required
-
+Examples:
+  python probs.py                      # interactive (manual input prompt)
+  python probs.py inputs/medical_test.inp
+  python probs.py inputs/medical_test.inp --names Sickness Test
   python probs.py inputs/weather_picnic.net --cmds "P(Weather=Sunny);entropy;exit"
+  python probs.py --help
 
-## License
-
-Earthquake:  python probs.py --help
-
-[Include your license information here]
-
-parents: None
-
-## Contributing
-
-1: 0.002Non-interactive batch example (run commands then quit):
-
-See [Developer Guide](docs/DEVELOPER_GUIDE.md) for development setup, coding standards, and contribution guidelines.
-
+Non-interactive batch example (run commands then quit):
   python probs.py inputs/medical_test.inp --cmds "P(Sickness|Test);odds_ratio(Sickness,Test);exit"
 
----
-
-Alarm:
-
-**Quick Links:**
-
-- [Full Documentation](docs/Userguide.md)parents: Burglary, EarthquakeTip: Use `--cmds` in scripts/CI to capture deterministic output without driving the REPL.
-
-- [Examples Library](inputs/)
-
-- [Report Issues](../../issues)00: 0.001   # P(Alarm=1|Burglary=0,Earthquake=0)```
-
-- [Development Setup](docs/DEVELOPER_GUIDE.md)
-01: 0.290   # P(Alarm=1|Burglary=0,Earthquake=1)
-
-10: 0.940   # P(Alarm=1|Burglary=1,Earthquake=0)The input data can either be specified interactively (which is a bit tedious) or read from a file that can either have the format of a joint probability table (possibly sparse) or as a number of conditional probability tables which specifies a Bayesian network. The Bayesian network format is often the simplest way to specify the system
-
-11: 0.950   # P(Alarm=1|Burglary=1,Earthquake=1)as it allows the same information to be specified in a more conscise format. The precise format is described in later sections in this document. Internally both input methods will establish a complete joint distribution table of size 2^N where N is the number of variables. In terms of performance the system can easily work with networks up to 20 variables on a 8GB RAM computer.
-
+Tip: Use `--cmds` in scripts/CI to capture deterministic output without driving the REPL.
 ```
+
+The input data can either be specified interactively (which is a bit tedious) or read from a file that can either have the format of a joint probability table (possibly sparse) or as a number of conditional probability tables which specifies a Bayesian network. The Bayesian network format is often the simplest way to specify the system
+as it allows the same information to be specified in a more conscise format. The precise format is described in later sections in this document. Internally both input methods will establish a complete joint distribution table of size 2^N where N is the number of variables. In terms of performance the system can easily work with networks up to 20 variables on a 8GB RAM computer.
 
 The scipt provides both public APIs as well as a CLI interface for interactive experiments.
 
-## Example Networks
-
 Some quick examples will give a sense of what can be calculated (this is not an exhaustive list)
 
-Explore classic probability problems:
-
-```bash1. `P(A)` — Marginal probability that variable `A` equals 1.
-
-networks                           # List available examples2. `P(~A)` or `P(Not(A))` — Marginal probability that `A` equals 0 (negation supported with `~`).
-
-python probs.py inputs/sprinkler.net    # Classic Bayesian network3. `P(A,B)` — Joint probability that `A=1` and `B=1`.
-
-python probs.py inputs/simpsons_paradox.inp    # Simpson's paradox4. `P(A=0,B=1)` — Joint probability using explicit value notation.
-
-python probs.py inputs/monty_hall.inp          # Monty Hall problem5. `P(A|B)` — Conditional probability P(A=1 | B=1).
-
-```6. `P(A,B|C)` — Joint probability of `A` and `B` given `C` (conditional joint).
-
+1. `P(A)` — Marginal probability that variable `A` equals 1.
+2. `P(~A)` or `P(Not(A))` — Marginal probability that `A` equals 0 (negation supported with `~`).
+3. `P(A,B)` — Joint probability that `A=1` and `B=1`.
+4. `P(A=0,B=1)` — Joint probability using explicit value notation.
+5. `P(A|B)` — Conditional probability P(A=1 | B=1).
+6. `P(A,B|C)` — Joint probability of `A` and `B` given `C` (conditional joint).
 7. `IsIndep(A,B)` — Test whether `A` and `B` are independent.
+8. `IsCondIndep(A,B|C)` — Test conditional independence given `C`.
+9. `P(A)+P(B)` — Arithmetic on probability values (addition supported).
+10. `P(A)*P(B|C)/P(D)` — Mixed arithmetic with conditional and marginal probabilities.
+11. `P(~A) + P(B|~C)` — Combine negation and conditional queries in arithmetic expressions.
+12. `cond_probs(1,2)` - Print a table of all possible combinations of `P(X1=x1|X2=x2,X3=x3)`
+13. `marginals` - Print a table of all marginal probabilitites
 
-**Available Examples:**8. `IsCondIndep(A,B|C)` — Test conditional independence given `C`.
-
-- Medical testing scenarios (base rate neglect, sequential testing)9. `P(A)+P(B)` — Arithmetic on probability values (addition supported).
-
-- Statistical paradoxes (Simpson's, Berkson's bias)10. `P(A)*P(B|C)/P(D)` — Mixed arithmetic with conditional and marginal probabilities.
-
-- Information theory examples (XOR triplet, parity constraints)11. `P(~A) + P(B|~C)` — Combine negation and conditional queries in arithmetic expressions.
-
-- Classic Bayesian networks (sprinkler, alarm, cancer diagnosis)12. `cond_probs(1,2)` - Print a table of all possible combinations of `P(X1=x1|X2=x2,X3=x3)`
-
-- Multi-valued variables (weather forecasting, student performance)13. `marginals` - Print a table of all marginal probabilitites
-
-
-
-## Key CommandsNotes:
-
+Notes:
 - Variable names may be single letters (`A`,`B`,...) or custom names specified in input files (`Rain`, `Sickness`, ...).
+- Whitespace and simple parentheses are supported inside `P(...)` queries. Use `~` as a concise negation operator or `Not(...)` for clarity.
 
-| Category | Commands | Purpose |- Whitespace and simple parentheses are supported inside `P(...)` queries. Use `~` as a concise negation operator or `Not(...)` for clarity.
+### Background: Bayesian Contingency Tables with Joint Probabilities
 
-|----------|----------|---------|
+A contingency table (also known as a cross-tabulation) is a matrix that displays the frequency distribution of variables. In the context of Bayesian probability, this system works with:
 
-| **Probability** | `P(A)`, `P(A\|B)`, `P(A,B)` | Query probabilities |### Background: Bayesian Contingency Tables with Joint Probabilities
-
-| **Independence** | `IsIndep(A,B)`, `IsCondIndep(A,B\|C)` | Test relationships |
-
-| **Information** | `entropy()`, `mutual_info(A,B)` | Information theory |A contingency table (also known as a cross-tabulation) is a matrix that displays the frequency distribution of variables. In the context of Bayesian probability, this system works with:
-
-| **Analysis** | `marginals`, `joint_table`, `sample()` | Explore distributions |
-
-| **Workflow** | `open file.inp`, `save output.inp` | File operations |- **Boolean random variables**: Each variable can take only two values (0 or 1, typically representing false/true or absence/presence)
-
+- **Boolean random variables**: Each variable can take only two values (0 or 1, typically representing false/true or absence/presence)
 - **Joint probability distributions**: The complete probability distribution over all possible combinations of variable values
+- **Bayesian inference**: The ability to compute conditional probabilities and test statistical relationships
 
-## Documentation- **Bayesian inference**: The ability to compute conditional probabilities and test statistical relationships
-
-
-
-- **[📖 User Guide](docs/Userguide.md)** - Comprehensive tutorial and referenceThe system is particularly useful for:
-
-- **[🏗️ Architecture](docs/ARCHITECTURE.md)** - Technical implementation details  - Analyzing relationships between binary events
-
-- **[👨‍💻 Developer Guide](docs/DEVELOPER_GUIDE.md)** - Contributing and development setup- Computing conditional probabilities in Bayesian networks
-
-- **[🧪 Testing Guide](TESTING.md)** - Test framework and validation- Testing for statistical independence between variables
-
+The system is particularly useful for:
+- Analyzing relationships between binary events
+- Computing conditional probabilities in Bayesian networks
+- Testing for statistical independence between variables
 - Educational purposes in probability theory and statistics
-
-## Educational Applications
 
 ### Command Line Arguments
 
-**Bayesian Reasoning:**
+The script supports the following command line arguments:
 
-- Medical diagnosis and base rate neglectThe script supports the following command line arguments:
-
-- Sequential evidence accumulation  
-
-- Prior-to-posterior updating- `file` (optional): Path to a file containing joint probabilities. If not provided, the system runs in interactive mode for manual input
-
+- `file` (optional): Path to a file containing joint probabilities. If not provided, the system runs in interactive mode for manual input
 - `--names`, `-n` (optional): Custom variable names to use with the input file, specified as space-separated values
 
-**Statistical Concepts:**
-
-- Simpson's paradox and confounding variables**Usage Examples:**
-
-- Selection bias and collider effects```bash
-
-- Markov chains and conditional independence# Interactive mode (manual input)
-
+**Usage Examples:**
+```bash
+# Interactive mode (manual input)
 python probs.py
 
-**Information Theory:**
-
-- Entropy and uncertainty quantification# Load from file with default variable names
-
-- Mutual information and dependencepython probs.py input.txt
-
-- Value of information in decision making
+# Load from file with default variable names
+python probs.py input.txt
 
 # Load from file with custom variable names
-
-## Requirementspython probs.py input.txt --names Rain Sprinkler WetGrass
-
+python probs.py input.txt --names Rain Sprinkler WetGrass
 ```
 
-- Python 3.7+
-
-- Dependencies: `click`, `pytest` (for development)## 2. Input File Format
-
-- No external mathematical libraries required
+## 2. Input File Format
 
 ### File Structure
 
-## License
-
 The input file contains joint probability data in a simple text format with the following structure:
 
-[Include your license information here]
-
 1. **Optional header line** for custom variable names
-
-## Contributing2. **Probability entries** - one per line
-
+2. **Probability entries** - one per line
 3. **Comments** and empty lines are ignored
-
-See [Developer Guide](docs/DEVELOPER_GUIDE.md) for development setup, coding standards, and contribution guidelines.
 
 ### Format Specification
 
----
-
 #### Variable Names Header (Optional)
+```
+variables: Name1,Name2,Name3,...
+```
 
-**Quick Links:**```
-
-- [Full Documentation](docs/Userguide.md)variables: Name1,Name2,Name3,...
-
-- [Examples Library](inputs/)```
-
-- [Report Issues](../../issues)
-
-- [Development Setup](docs/DEVELOPER_GUIDE.md)- Must start with "variables:" (case-insensitive)
+- Must start with "variables:" (case-insensitive)
 - Variable names separated by commas
 - Names can contain spaces (will be trimmed)
 - If omitted, defaults to A, B, C, ...

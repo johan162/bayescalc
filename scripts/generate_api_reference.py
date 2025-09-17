@@ -3,16 +3,16 @@
 
 This script introspects `probs_core.probability.ProbabilitySystem` and builds a
 Markdown table summarizing public methods. It then injects the table between
-sentinel markers in the specified architecture file (default: ARCHITECTURE.md).
+sentinel markers in the specified architecture file (default: docs/ARCHITECTURE.md).
 
 Sentinels:
 <!-- API-TABLE:START -->
 <!-- API-TABLE:END -->
 
 Usage:
-  python scripts/generate_api_reference.py --file ARCHITECTURE.md            # inject/update
-  python scripts/generate_api_reference.py --file ARCHITECTURE.md --print    # print table only
-  python scripts/generate_api_reference.py --file ARCHITECTURE.md --check    # exit 1 if update needed
+  python scripts/generate_api_reference.py --file docs/ARCHITECTURE.md            # inject/update
+  python scripts/generate_api_reference.py --file docs/ARCHITECTURE.md --print    # print table only
+  python scripts/generate_api_reference.py --file docs/ARCHITECTURE.md --check    # exit 1 if update needed
 
 Exit codes:
   0 = success / no update needed (in check mode)
@@ -129,7 +129,7 @@ def inject_table(original: str, table: str) -> str:
 
 def main():
     parser = argparse.ArgumentParser(description="Generate ProbabilitySystem API reference table")
-    parser.add_argument("--file", default="ARCHITECTURE.md", help="Markdown file to update")
+    parser.add_argument("--file", default="docs/ARCHITECTURE.md", help="Markdown file to update")
     parser.add_argument("--print", action="store_true", dest="do_print", help="Print table only")
     parser.add_argument("--check", action="store_true", help="Exit 1 if the file needs update (CI mode)")
     args = parser.parse_args()
