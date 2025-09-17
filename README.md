@@ -24,7 +24,7 @@ MIT License. See [LICENSE](LICENSE) file.
 
 ## Features
 
-- Interactive REPL with tab completion for commands, variable names, and variable values
+- Interactive *Read-Eval-Print-Loop* (REPL) with tab completion for commands, variable names, and variable values
 - Multi‑valued variables and boolean variables (with `~`/`Not()` negation)
 - Two input formats:
   - `.net`: readable Bayesian network CPTs (multi‑valued)
@@ -112,7 +112,7 @@ Run `networks` (or `networks net` / `networks inp`) to list all included models 
 The tool enumerates the full joint distribution. Boolean models scale as `2^N`; multi‑valued models scale by the product of state counts. Practical range: ~7–10 variables depending on cardinalities.
 
 
-## Basic Usage Examples
+## Usage Examples
 
 **Load and explore a probability distribution:**
 ```bash
