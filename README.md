@@ -118,7 +118,7 @@ Run `networks` (or `networks net` / `networks inp`) to list all included models 
 
 ### A note on performance
 
-The tool enumerates the full joint distribution. Boolean models scale as `2^N`; multi‑valued models scale by the product of state counts. Practical range: ~7–10 variables depending on cardinalities.
+The tool enumerates the full joint distribution. Boolean models scale as `2^N`; multi‑valued models scale by the product of state counts. Practical range: ~7–10 variables depending on cardinalities. Pure boolean variables scale up to ~15-18 variables.
 
 
 ## Usage Examples
@@ -137,3 +137,21 @@ python probs.py inputs/sprinkler.net
 > mutual_info(Rain,Sprinkler)  # Shared information
 > cond_entropy(Rain|WetGrass)  # Remaining uncertainty
 ```
+
+### Typical commands and expressions
+
+Some final examples will give a sense of what can be calculated (this is not an exhaustive list)
+
+1. `P(A)` — Marginal probability that variable `A` equals 1.
+2. `P(~A)` or `P(Not(A))` — Marginal probability that `A` equals 0 (negation supported with `~`).
+3. `P(A,B)` — Joint probability that `A=1` and `B=1`.
+4. `P(A=0,B=1)` — Joint probability using explicit value notation.
+5. `P(A|B)` — Conditional probability P(A=1 | B=1).
+6. `P(A,B|C)` — Joint probability of `A` and `B` given `C` (conditional joint).
+7. `IsIndep(A,B)` — Test whether `A` and `B` are independent.
+8. `IsCondIndep(A,B|C)` — Test conditional independence given `C`.
+9. `P(A) + P(B)` — Arithmetic on probability values.
+10. `P(A) * P(B|C) / P(D)` — Mixed arithmetic with conditional and marginal probabilities.
+11. `P(~A) + P(B|~C)` — Combine negation and conditional queries in arithmetic expressions.
+12. `cond_probs(1,2)` - Print a table of all possible combinations of `P(X1=x1|X2=x2,X3=x3)`
+13. `marginals` - Print a table of all marginal probabilitites
