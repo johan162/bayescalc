@@ -36,11 +36,20 @@ MIT License. See [LICENSE](LICENSE) file.
 
 - Python 3.7+
 - Recommended: Python 3.13+
-  - macOS
-  - `python -m venv .venv && source .venv/bin/activate`
-  - `pip install -r requirements.txt` (or `pip install -e .` if provided)
+
+Unpack the *.tar.gz file into a directory. The program requires no specific installation or dependencies to run. 
+
 
 ## Quick Start
+
+Load the classical counterintuitive medical test example. The test is for a disease that 1% of the population has, (i.e. `P(Sickness) = 0.01`, also known as the prevalence of the disease)
+
+The test have:
+- 95% sensitivity = probabiity that it detects a disease when the disese is present, i.e. `P(Test|Sickness) = 0.95` (true positive)
+- 94% specificity, i.e. 100-94=6% probability that it gives a false positive when the disease is absent, i.e. `P(Test|~Sickness) = 0.06` (false positive)
+
+Then the question is; If you get a test and the test indicates you have the disease, what is the probability that you actually have the disease?
+
 
 ```bash
 python probs.py inputs/medical_test.inp
@@ -127,11 +136,4 @@ python probs.py inputs/sprinkler.net
 > entropy()                    # Joint entropy of all variables
 > mutual_info(Rain,Sprinkler)  # Shared information
 > cond_entropy(Rain|WetGrass)  # Remaining uncertainty
-```
-
-**Explore classic probability paradoxes:**
-```bash
-python probs.py inputs/simpsons_paradox.inp    # Simpson's paradox
-python probs.py inputs/monty_hall.inp          # Monty Hall problem
-python probs.py inputs/berkson_bias.inp        # Selection bias
 ```
