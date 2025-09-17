@@ -1,18 +1,20 @@
 # Bayesian Network Calculator
 
-## 1. Overview
+## Overview
 
-This script helps with the definition and calculations using Bayesian networks. 
+BayesCalc is a command-line tool for exploring Bayesian probability distributions and conditional reasoning. 
+Define probability models and ask natural language questions like `P(Disease|Test)` or `IsIndep(A,B)` to get 
+immediate numerical answers.
 
- - The calculator implements a Bayesian contingency table system that enables users to compute various types of probabilities, conditional probabilities and statistical independence tests in addition to some information theorethical calculations.
- - It allows easy definition of network from either JPT and CPT tables.  
- - It allows the usage of standard mathematical probability notations when doing calculations (see below). 
- - It includes a number of pre-defined bayesian networks common in lthe iterature as illustrations of various property of BN.
+Among other things it allows
 
-
-### Function and Usage
-
-The main entry point is `probs.py` and the easiest way to start using the calculator and one of the supplied examples is by entering:
+ - calculations to be done directly using standard mathematical notations like `P(A|B,C) * P(C)`
+ - easy definition of network from either JPT (Joint Probability) or CPT (Conditional Probability) tables.
+ - the usage of both boolean and multi-valued variables
+ - the definition of custom variable and statenames
+ 
+The main entry point is `probs.py` and the easiest way to start using the calculator and one of the 
+included examples. As quick example using the included medical test data is by running:
 
 
 ```shell
