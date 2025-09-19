@@ -27,8 +27,7 @@ A comprehensive guide to using BayesCalc for Bayesian probability analysis, stat
    - [Sampling](#sampling)
    - [Precision Control](#precision-control)
    - [Epidemiological Measures](#epidemiological-measures)
-10. [Methodology & Implementation](#methodology--implementation)
-11. [Quick Reference](#quick-reference)
+10. [APPENDIX: Quick Reference](#quick-reference)
 
 ---
 
@@ -49,7 +48,7 @@ The system provides a natural query interface where you can ask questions like `
 
 ### Prerequisites
 - Python 3.7 or later
-- Required packages: `click`, `pytest` (for development)
+- Required packages for development: `click`, `pytest`
 
 ### Installation
 ```bash
@@ -88,10 +87,10 @@ The `.inp` format specifies joint probability distributions directly through enu
 ```
 variables: A, B, C
 # Joint probability table
-00: 0.125   # P(A=0, B=0, C=0)
-01: 0.125   # P(A=0, B=0, C=1)
-10: 0.125   # P(A=0, B=1, C=0)
-11: 0.125   # P(A=0, B=1, C=1)
+000: 0.125   # P(A=0, B=0, C=0)
+001: 0.125   # P(A=0, B=0, C=1)
+010: 0.125   # P(A=0, B=1, C=0)
+011: 0.125   # P(A=0, B=1, C=1)
 100: 0.125  # P(A=1, B=0, C=0)
 101: 0.125  # P(A=1, B=0, C=1)
 110: 0.125  # P(A=1, B=1, C=0)
@@ -122,36 +121,108 @@ variables: Sickness, Test
 ### Bayesian Networks (.net)
 
 The `.net` format defines probability distributions through conditional probability tables (CPTs) in a Bayesian network structure.
+There is two variants of allowed input file
 
-#### Basic Structure
+  1. For multi-valued variables (also works for Boolean)
+  2. A simplified format for boolean variables (**does NOT** work for multi-values variables)
+
+#### Variant 1 - Multi values variables
+
+All cihld/parent states are explicitly specified. 
+
+```txt
+# Alarm network, variant 1 - Multi-values variable format
+variable B    # Burglery
+variable E    # Earthquake
+variable A    # Alarm
+variable J    # John calls
+variable M    # Mary calls
+
+B <- None
+1: 0.001 # P(B)
+0: 0.999
+
+E <- None
+1: 0.002 # P(E)
+0: 0.998
+
+A <- (B, E) 
+(1 | 1,1): 0.95
+(0 | 1,1): 0.05
+(1 | 1,0): 0.94
+(0 | 1,0): 0.06
+(1 | 0,1): 0.29
+(0 | 0,1): 0.71
+(1 | 0,0): 0.001
+(0 | 0,0): 0.999
+
+J <- (A) 
+(1|1): 0.9
+(1|0): 0.05
+(0|1): 0.1
+(0|0): 0.95
+
+M <- (A) 
+(1|1): 0.7
+(1|0): 0.01
+(0|1): 0.3
+(0|0): 0.99
+
 ```
-variables: A, B, C
 
-A:
-parents: None
-1: 0.5
-
-B:
-parents: A
-0: 0.3    # P(B=1|A=0)
-1: 0.7    # P(B=1|A=1)
-
-C:
-parents: A, B
-00: 0.1   # P(C=1|A=0,B=0)
-01: 0.4   # P(C=1|A=0,B=1)
-10: 0.6   # P(C=1|A=1,B=0)
-11: 0.9   # P(C=1|A=1,B=1)
-```
-
-#### Key Features
-- **Variables Declaration**: Defines all variables in display order
+**Key Features:**
+- **Variable Declaration**: Defines all variables in display order
 - **Parent Specification**: Lists parents for each variable (or `None` for roots)
 - **Conditional Tables**: Each pattern specifies P(Variable=1|Parents=pattern)
 - **Complete Coverage**: Must specify probabilities for all parent combinations
 
-#### Example: Alarm Network
+
+#### Variant 2 - Boolean variables
+
+For boolean only network a simplified `*.net` file can be made. Again the same example as previously
+but this time we can use that all variables are boolean and use the simplified format:
+
 ```
+# Alarm network, variant 2 - Boolean-value variables
+variables: B, E, A, J, M
+
+B : None
+0.001 # P(B)
+
+E: None
+0.002 # P(E)
+
+A: B, E
+11: 0.95
+10: 0.94
+01: 0.29
+00: 0.001
+
+J: A
+1: 0.9
+0: 0.05
+
+M: A
+1: 0.7
+0: 0.01
+```
+
+**Key Features:**
+- **Variable Declaration**: Defines all variables in display order in one line
+- **Parent Specification**: Lists parents for each variable (or `None` for roots)
+- **CPT for True values only:** Only the rows in the CPT for the true value needs to be specified
+- **Complete Coverage Autocalculated**: Missing values are automatically calculated 
+
+> [!TIP]
+> For boolean variable networks either style can be used
+
+
+#### Example: Alarm Network with long variable names
+
+This is again he same example as before but this time with long variable names
+
+```
+# Alarm network, variant 2 - Boolean-value long variables 
 variables: Burglary, Earthquake, Alarm, JohnCalls, MaryCalls
 
 Burglary:
@@ -180,40 +251,59 @@ parents: Alarm
 1: 0.700    # P(MaryCalls=1|Alarm=1)
 ```
 
+> [!IMPORTANT]
+> The child value is always implicitly assumed to be "True" using variant 2 (i.e. Boolean format)
+
 ### Multi-Valued Variables
 
-BayesCalc also supports variables with more than two states, specified in the `.net` format using explicit state names.
+BayesCalc also supports variables with more than two states (cardinality > 2), specified in the `.net` format using explicit state names.
 
 #### Example: Weather Forecast
 ```
-variables: Weather, Forecast, Picnic
+# Weather-Picnic BN: Weather influences Forecast; both affect Picnic decision (showing multi-valued causal + decision interplay).
 
-Weather:
-parents: None
-states: Sunny, Cloudy, Rainy
-Sunny: 0.6
+variable Weather {Sunny, Cloudy, Rainy}
+variable Forecast {Sunny, Cloudy, Rainy}
+variable Picnic {Yes, No}
+
+# Root
+Weather <- None
+Sunny: 0.5
 Cloudy: 0.3
-Rainy: 0.1
+Rainy: 0.2
 
-Forecast:
-parents: Weather
-states: Sunny, Cloudy, Rainy
-Sunny|Sunny: 0.8
-Sunny|Cloudy: 0.1  
-Sunny|Rainy: 0.1
-Cloudy|Sunny: 0.15
-Cloudy|Cloudy: 0.7
-Cloudy|Rainy: 0.2
-Rainy|Sunny: 0.05
-Rainy|Cloudy: 0.2
-Rainy|Rainy: 0.7
+# Forecast depends on Weather
+Forecast <- (Weather)
+(Sunny | Sunny): 0.7
+(Cloudy | Sunny): 0.2
+(Rainy | Sunny): 0.1
+(Sunny | Cloudy): 0.2
+(Cloudy | Cloudy): 0.6
+(Rainy | Cloudy): 0.2
+(Sunny | Rainy): 0.1
+(Cloudy | Rainy): 0.2
+(Rainy | Rainy): 0.7
 
-Picnic:
-parents: Weather, Forecast
-states: Yes, No
-Yes|Sunny,Sunny: 0.9
-Yes|Sunny,Cloudy: 0.7
-# ... (additional combinations)
+# Picnic decision depends on Weather & Forecast
+Picnic <- (Weather, Forecast)
+(Yes | Sunny,Sunny): 0.9
+(No  | Sunny,Sunny): 0.1
+(Yes | Sunny,Cloudy): 0.8
+(No  | Sunny,Cloudy): 0.2
+(Yes | Sunny,Rainy): 0.4
+(No  | Sunny,Rainy): 0.6
+(Yes | Cloudy,Sunny): 0.7
+(No  | Cloudy,Sunny): 0.3
+(Yes | Cloudy,Cloudy): 0.5
+(No  | Cloudy,Cloudy): 0.5
+(Yes | Cloudy,Rainy): 0.3
+(No  | Cloudy,Rainy): 0.7
+(Yes | Rainy,Sunny): 0.4
+(No  | Rainy,Sunny): 0.6
+(Yes | Rainy,Cloudy): 0.3
+(No  | Rainy,Cloudy): 0.7
+(Yes | Rainy,Rainy): 0.1
+(No  | Rainy,Rainy): 0.9
 ```
 
 ---
@@ -249,10 +339,10 @@ P(A=0|B,C=0)      # P(A=0|B=1,C=0) - mixed conditions
 
 #### Arithmetic Operations
 ```bash
-P(A) + P(B)                    # Sum of probabilities
-P(A|B) * P(B)                  # Chain rule application
-P(B|A) * P(A) / P(B)          # Bayes' theorem manual
-1 - P(A)                       # Complement probability
+P(A) + P(B)               # Sum of probabilities
+P(A|B) * P(B)             # Chain rule application
+P(B|A) * P(A) / P(B)      # Bayes' theorem manual
+1 - P(A)                  # Complement probability
 ```
 
 ### Independence Testing
@@ -315,7 +405,7 @@ mutual_info(A,B base=10)    # Different logarithm base
 
 #### File Operations
 ```bash
-open filename.inp           # Load new distribution
+open filename.inp          # Load new distribution
 save output.inp            # Save current distribution
 networks                   # List available examples
 networks inp               # Filter by file type
@@ -418,7 +508,7 @@ Consider a medical test for a rare disease with the following characteristics:
 
 ### File Specification
 
-Create `medical_test.inp`:
+Use the existing `inputs/medical_test.inp`:
 ```
 variables: Sickness, Test
 # P(Sickness=1) = 0.01, P(Test=1|Sickness=1) = 0.95, P(Test=1|Sickness=0) = 0.06
@@ -433,7 +523,7 @@ variables: Sickness, Test
 
 Load the scenario and explore:
 ```bash
-python probs.py medical_test.inp
+python probs.py inputs/medical_test.inp
 ```
 
 #### Basic Probabilities
@@ -448,7 +538,8 @@ P(Test|Sickness)      # Result: 0.9500 (95% sensitivity)
 P(Sickness|Test)      # Result: 0.1379 (13.79%)
 ```
 
-**Interpretation**: Despite the test being 95% accurate, a positive result only indicates 13.8% probability of actually having the disease! This demonstrates the critical importance of base rates in Bayesian reasoning.
+**Interpretation**: Despite the test being 95% accurate, a positive result only indicates 13.8% probability of actually having the disease! 
+This demonstrates the critical importance of base rates in Bayesian reasoning.
 
 #### Manual Verification (Bayes' Theorem)
 ```bash
@@ -488,29 +579,10 @@ Use 13.8% as new prior probability:
 
 This demonstrates the power of accumulating evidence in Bayesian reasoning.
 
-### Information-Theoretic Analysis
+> [!TIP]
+> The program inlcudes a script `scripts/sequential_demo.py` which you can run to see the dramatic increase when running the
+> test multiple times.
 
-#### Entropy and Uncertainty
-```bash
-entropy(Sickness)              # H(Sickness) ≈ 0.081 bits
-entropy(Test)                  # H(Test) ≈ 0.353 bits  
-entropy(Sickness,Test)         # H(Sickness,Test) ≈ 0.383 bits
-```
-
-#### Value of Testing
-```bash
-cond_entropy(Sickness|Test)    # H(Sickness|Test) ≈ 0.030 bits
-mutual_info(Sickness,Test)     # I(Sickness;Test) ≈ 0.051 bits
-```
-
-The mutual information quantifies how much uncertainty about disease status is resolved by the test result.
-
-### Key Insights
-
-1. **Base Rate Neglect**: Low disease prevalence dominates the calculation
-2. **Bayesian Reasoning**: Conditional probabilities depend on both test accuracy and prior beliefs
-3. **Sequential Evidence**: Multiple tests compound evidence dramatically
-4. **Information Value**: Entropy measures quantify the diagnostic value of tests
 
 This example illustrates why understanding Bayesian reasoning is crucial for medical decision-making, quality control, and any domain involving probabilistic evidence.
 
@@ -519,7 +591,8 @@ This example illustrates why understanding Bayesian reasoning is crucial for med
 ## CLI Commands Reference
 
 <!-- CLI_HELP_START -->
-**NOTE:** This section is auto-generated from the source code. Do not edit it manually; instead update the code or run the generator.
+> [!WARNING]
+> This section is auto-generated from the source code. Do not edit it manually; instead update the code or run the generator.
 
 Below are the supported CLI commands and their arguments:
 
@@ -931,58 +1004,7 @@ P(Cancer|Smoking=0)              # Risk in unexposed group
 
 ---
 
-## Methodology & Implementation
-
-### Parsing and Validation
-
-#### Joint Probability Tables (.inp)
-1. **Variable Detection**: Auto-generate variable names (A,B,C,...) if not specified
-2. **Pattern Matching**: Parse binary patterns and probabilities with comment support
-3. **Completeness Check**: 
-   - Single missing entry → infer as residual (1 - sum)
-   - Multiple missing → assign zeros (sparse specification)
-4. **Normalization**: Scale to sum=1.0 if within 5% tolerance
-
-#### Bayesian Networks (.net)
-1. **Structure Parsing**: Extract variable dependencies and parent relationships
-2. **CPT Validation**: Ensure complete coverage of all parent combinations
-3. **Joint Construction**: Multiply conditional probabilities across all variable assignments
-4. **Consistency Check**: Validate probability constraints and normalization
-
-### Query Evaluation
-
-#### Probability Calculations
-1. **Tokenization**: Parse expressions with operators (+, -, *, /, |, ~) and functions
-2. **AST Construction**: Build abstract syntax tree distinguishing probability vs arithmetic nodes
-3. **Marginalization**: Sum joint probabilities over relevant variable assignments
-4. **Conditioning**: Compute P(A|B) = P(A,B) / P(B) with zero-denominator checking
-
-#### Independence Testing
-- **Marginal**: Test |P(X,Y) - P(X)P(Y)| < tolerance
-- **Conditional**: Test for all Z assignments where P(Z) > 0
-
-#### Information Measures
-- **Entropy**: H(X) = -∑ P(x) log P(x), skipping zero probabilities
-- **Conditional**: H(X|Y) = H(X,Y) - H(Y)
-- **Mutual**: I(X;Y) = H(X) + H(Y) - H(X,Y)
-
-### Performance Characteristics
-
-- **Complexity**: O(2^n) operations for n binary variables
-- **Practical Limits**: Tested up to ~18-20 variables depending on operations
-- **Memory**: Joint probability tables require 2^n × 8 bytes storage
-- **Optimization**: Future versions could implement variable elimination or junction trees
-
-### Numerical Considerations
-
-- **Floating Point**: Standard Python float precision (IEEE 754 double)
-- **Tolerance**: Configurable epsilon for independence testing (default 1e-9)
-- **Normalization**: Automatic scaling for probability vectors near 1.0
-- **Zero Handling**: Explicit checks prevent log(0) and division by zero
-
----
-
-## Quick Reference
+## APPENDIX: Quick Reference
 
 ### Query Patterns
 | Task | Example | Notes |

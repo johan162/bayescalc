@@ -6,6 +6,7 @@ Interactive Bayesian network analysis for learning, teaching, and quick “back�
 ## Overview
 
 BayesCalc is a command‑line tool and Python library for exploring joint and conditional probabilities over Bayesian networks. Load a model, ask questions like `P(Disease|Test)` or `IsCondIndep(A,B|C)`, and get immediate answers. Use it interactively, via CLI batch commands, or as a library.
+In terms of system size there is no hard upper limit but in practice given the speed of Python and the naive implementation there is a practical limit with around 15 variables for Boolean systems and 7-10 multi-valued variables depending on the specific cardinality.
 
 Quick links:
 | Doc | Description |
@@ -25,11 +26,12 @@ MIT License. See [LICENSE](LICENSE) file.
 ## Features
 
 - Interactive *Read-Eval-Print-Loop* (REPL) with tab completion for commands, variable names, and variable values
+- Supports standard mathematical notations, e.g expressions such as "`P(A|B,C) * P(B|C )* P(C)`" or "`P(~A)`"
 - Multi‑valued variables and boolean variables (with `~`/`Not()` negation)
-- Two input formats:
-  - `.net`: readable Bayesian network CPTs (multi‑valued)
-  - `.inp`: explicit joint probability tables (boolean)
-- Built‑in analyses: marginals, joints, conditionals, independence tests, entropy, mutual information
+- Two file input formats:
+  - `.net`: readable Bayesian network specific with Conditional Probability Tables (CPT), supports variables with cardinality > 2
+  - `.inp`: explicit joint probability tables (JPT), only supports variables with cardinality=2 (boolean)
+- Built‑in analyses: marginals, joints, conditionals, independence tests, entropy, mutual information, etc.
 - Pretty tables: `marginals`, `cond_probs(i,j)`, `list`, `networks`, etc.
 
 ## Installation
@@ -42,13 +44,13 @@ Unpack the *.tar.gz file into a directory. The program requires no specific inst
 
 ## Quick Start
 
-Load the classical counterintuitive medical test example. The test is for a disease that 1% of the population has, (i.e. `P(Sickness) = 0.01`, also known as the prevalence of the disease)
+Load the classical counterintuitive medical test example. The test is for a disease that 1% of the population has, (i.e. `P(Sickness) = 0.01`, (also known as the prevalence)
 
 The test have:
 - 95% sensitivity = probabiity that it detects a disease when the disese is present, i.e. `P(Test|Sickness) = 0.95` (true positive)
 - 94% specificity, i.e. 100-94=6% probability that it gives a false positive when the disease is absent, i.e. `P(Test|~Sickness) = 0.06` (false positive)
 
-Then the question is; If you get a test and the test indicates you have the disease, what is the probability that you actually have the disease?
+Then the question is; If you get a test result that indicates you have the disease, what is the probability that you actually have the disease? A common (but wrong!) answer is "95%".
 
 
 ```bash
@@ -100,25 +102,28 @@ Non-interactive batch example (run commands then quit):
   python probs.py inputs/medical_test.inp --cmds "P(Sickness|Test);odds_ratio(Sickness,Test);exit"
 ```
 
-# File input formats
-
-- `.inp` (boolean JPT): explicit joint table; concise for small boolean systems
-- `.net` (CPT network): human‑readable BN with parent links and per‑state CPT rows; supports multi‑valued variables
-
-A complete list and explanation of all example networks can be found in the user guide.
 
 
 ## Example networks
 
-Run `networks` (or `networks net` / `networks inp`) to list all included models with descriptions. A few highlights:
+Run `networks` (or `networks net` / `networks inp`) to list all included models with descriptions. 
+
+```bash
+  python probs.py inputs/medical_test.inp --cmds "networks;exit"
+```
+
+A few highlights:
 - Sprinkler (net): classic Cloudy→{Sprinkler,Rain}→WetGrass
 - Student performance (net): multi‑valued; Intelligence & Difficulty → Grade → Letter
 - Weather picnic (net): multi‑valued; Weather & Forecast → Picnic
 - Medical test (inp): rare disease screening with imperfect sensitivity/specificity
+- Burglury, Earthquake, Alarm (inp/net) network, boolean network common in course materials
+
 
 ### A note on performance
 
-The tool enumerates the full joint distribution. Boolean models scale as `2^N`; multi‑valued models scale by the product of state counts. Practical range: ~7–10 variables depending on cardinalities. Pure boolean variables scale up to ~15-18 variables.
+The tool enumerates the full joint distribution. Boolean models scale as `2^N`; multi‑valued models scale by the product of state counts. 
+Practical range: ~7–10 variables depending on cardinalities. Pure boolean variables scale up to ~15 variables.
 
 
 ## Usage Examples

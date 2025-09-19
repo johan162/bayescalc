@@ -218,7 +218,7 @@ Future optimizations (roadmap candidates):
 * `docs/Userguide.md` — Comprehensive user concepts, file formats, example networks.
 * `docs/DEVELOPER_GUIDE.md` — Expanded process/workflow & API tables.
 * `CONTRIBUTING.md` — PR workflow & checklist.
-* `TESTING.md` — (If present) deeper rationale for test layering.
+* `TESTING.md` — Deeper rationale for test layering.
 * API Table Regeneration: run `make api-ref` to refresh the public `ProbabilitySystem` method table below.
 
 <!-- API-TABLE:START -->
@@ -247,6 +247,4 @@ Future optimizations (roadmap candidates):
 | `save_to_file` | `(file_path: str)` | instance | Save the joint probabilities and variable names to a file. |
 <!-- API-TABLE:END -->
 
----
-End of Architecture Document.
 
