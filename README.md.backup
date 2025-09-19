@@ -276,7 +276,6 @@ ps = ProbabilitySystem.from_file('examples/explaining_away_alarm.net')
 print(ps.get_marginal_probability([0],[1]))  # P(B=1)
 ```
 
-This produces a joint distribution consistent with the supplied CPTs and enables all standard queries and derived statistics.
 
 ### Multi-Valued Bayesian Network Syntax (New)
 

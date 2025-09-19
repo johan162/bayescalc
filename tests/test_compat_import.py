@@ -1,5 +1,5 @@
 def test_probs_import_exposes_probability_system():
-    import probs
+    import bayescalc
 
     # The wrapper should expose ProbabilitySystem
-    assert hasattr(probs, "ProbabilitySystem")
+    assert hasattr(bayescalc, "ProbabilitySystem")

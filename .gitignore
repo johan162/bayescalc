@@ -10,4 +10,4 @@ dist/
 bayescalc.egg-info/
 .pytest_cache/
 *.pdf
-
+*.backup
