@@ -232,3 +232,157 @@ def pretty_print_conditional_probabilities(variable_names: List[str], num_variab
     print(
         "\nNote: Only showing combinations where target and condition variables don't overlap."
     )
+
+
+def pretty_print_contingency_table(variable_names: List[str], joint_probabilities: dict, get_marginal):
+    """Print contingency tables for variable combinations.
+
+    For 2 variables: prints a single 2x2 contingency table.
+    For 3-4 variables: prints partitioned 2x2 tables for each unique combination of the remaining variables.
+    For more than 4 variables: prints an error message.
+
+    Args:
+      variable_names: list of variable names.
+      joint_probabilities: dict mapping state tuples to probabilities.
+      get_marginal: callable to fetch marginal probability given indices and values.
+    """
+    num_vars = len(variable_names)
+
+    if num_vars < 2:
+        print("Error: Need at least 2 variables for contingency table.")
+        return
+
+    if num_vars > 4:
+        print("Error: Contingency table supports up to 4 variables.")
+        return
+
+    print("\nContingency Table(s):")
+    print("=" * 50)
+
+    if num_vars == 2:
+        # Simple 2x2 table
+        _print_2x2_contingency_table(variable_names, get_marginal)
+    else:
+        # Partitioned tables
+        _print_partitioned_contingency_tables(variable_names, get_marginal, joint_probabilities)
+
+
+def _print_2x2_contingency_table(variable_names: List[str], get_marginal):
+    """Print a single 2x2 contingency table for two variables."""
+    var1, var2 = variable_names[0], variable_names[1]
+    var1_idx, var2_idx = 0, 1
+
+    # Get the four cell values
+    p00 = get_marginal([var1_idx, var2_idx], [0, 0])  # P(var1=0, var2=0)
+    p01 = get_marginal([var1_idx, var2_idx], [0, 1])  # P(var1=0, var2=1)
+    p10 = get_marginal([var1_idx, var2_idx], [1, 0])  # P(var1=1, var2=0)
+    p11 = get_marginal([var1_idx, var2_idx], [1, 1])  # P(var1=1, var2=1)
+
+    # Calculate row and column totals
+    row1_total = p00 + p01
+    row2_total = p10 + p11
+    col1_total = p00 + p10
+    col2_total = p01 + p11
+    total = row1_total + row2_total
+
+    from .formatting import fmt
+
+    # Print the table
+    print(f"\n{var1} \\ {var2}")
+    print("           0            1         Total")
+    print("-" * 45)
+    print(f"0  {fmt(p00):>12} {fmt(p01):>12} {fmt(row1_total):>12}")
+    print(f"1  {fmt(p10):>12} {fmt(p11):>12} {fmt(row2_total):>12}")
+    print("-" * 45)
+    print(f"Total  {fmt(col1_total):>8} {fmt(col2_total):>12} {fmt(total):>12}")
+
+
+
+def _print_partitioned_contingency_tables(variable_names: List[str], get_marginal, joint_probabilities: dict):
+    """Print partitioned 2x2 contingency tables for each combination of conditioning variables."""
+    from itertools import combinations, product
+
+    num_vars = len(variable_names)
+
+    # For 3 variables: condition on 1 variable, show 2x2 for the other 2
+    # For 4 variables: condition on 2 variables, show 2x2 for the other 2
+    if num_vars == 3:
+        condition_size = 1
+        table_vars_size = 2
+    else:  # num_vars == 4
+        condition_size = 2
+        table_vars_size = 2
+
+    # Get all combinations for conditioning variables
+    all_indices = list(range(num_vars))
+    condition_combos = list(combinations(all_indices, condition_size))
+
+    for condition_combo in condition_combos:
+        condition_indices = list(condition_combo)
+        table_indices = [i for i in all_indices if i not in condition_indices]
+
+        # Get variable names
+        condition_vars = [variable_names[i] for i in condition_indices]
+        table_vars = [variable_names[i] for i in table_indices]
+
+        # For each possible combination of condition values
+        for condition_values in product([0, 1], repeat=condition_size):
+            # Print header for this partition
+            condition_str = ", ".join(f"{var}={val}" for var, val in zip(condition_vars, condition_values))
+            print(f"\nGiven: {condition_str}")
+            print("-" * 40)
+
+            # Print the 2x2 table for this condition
+            _print_2x2_contingency_table_for_condition(table_vars, table_indices, condition_indices, list(condition_values), joint_probabilities)
+
+
+def _print_2x2_contingency_table_for_condition(table_vars: List[str], table_indices: List[int], condition_indices: List[int], condition_values: List[int], joint_probabilities: dict):
+    """Print a 2x2 contingency table conditioned on specific variable values."""
+    var1, var2 = table_vars[0], table_vars[1]
+    var1_idx, var2_idx = table_indices[0], table_indices[1]
+
+    # Compute conditional probabilities for each cell
+    p00 = _get_conditional_probability(joint_probabilities, [var1_idx, var2_idx], [0, 0], condition_indices, condition_values)
+    p01 = _get_conditional_probability(joint_probabilities, [var1_idx, var2_idx], [0, 1], condition_indices, condition_values)
+    p10 = _get_conditional_probability(joint_probabilities, [var1_idx, var2_idx], [1, 0], condition_indices, condition_values)
+    p11 = _get_conditional_probability(joint_probabilities, [var1_idx, var2_idx], [1, 1], condition_indices, condition_values)
+
+    # Calculate row and column totals
+    row1_total = p00 + p01
+    row2_total = p10 + p11
+    col1_total = p00 + p10
+    col2_total = p01 + p11
+    total = row1_total + row2_total
+
+    from .formatting import fmt
+
+    # Print the table
+    print(f"\n{var1} \\ {var2}")
+    print("           0            1         Total")
+    print("-" * 45)
+    print(f"0  {fmt(p00):>12} {fmt(p01):>12} {fmt(row1_total):>12}")
+    print(f"1  {fmt(p10):>12} {fmt(p11):>12} {fmt(row2_total):>12}")
+    print("-" * 45)
+    print(f"Total  {fmt(col1_total):>8} {fmt(col2_total):>12} {fmt(total):>12}")
+
+
+def _get_conditional_probability(joint_probabilities: dict, target_indices: List[int], target_values: List[int], condition_indices: List[int], condition_values: List[int]) -> float:
+    """Compute conditional probability P(target=target_values | condition=condition_values)."""
+    # Sum joint probabilities for the target and condition
+    joint_prob = 0.0
+    condition_prob = 0.0
+
+    for state, prob in joint_probabilities.items():
+        # Check if condition matches
+        condition_match = all(state[i] == condition_values[j] for j, i in enumerate(condition_indices))
+        if condition_match:
+            condition_prob += prob
+            # Check if target also matches
+            target_match = all(state[i] == target_values[j] for j, i in enumerate(target_indices))
+            if target_match:
+                joint_prob += prob
+
+    if condition_prob == 0:
+        return 0.0
+
+    return joint_prob / condition_prob

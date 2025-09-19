@@ -103,6 +103,7 @@ COMMANDS = [
     {"cmd": "open <filename>", "summary": "Open a .inp or .net file and replace current system"},
     {"cmd": "networks", "summary": "List available network input files with brief descriptions"},
     {"cmd": "list", "summary": "List all variables and their possible state values"},
+    {"cmd": "contingency_table", "summary": "Print pretty-printed 2-D contingency table (supports up to 4 variables)"},
     {"cmd": "quit | exit", "summary": "Exit the program"},
 ]
 
@@ -149,6 +150,13 @@ def _print_conditional_probabilities(prob_system: ProbabilitySystem, n: int, m: 
         prob_system.pretty_print_conditional_probabilities(n, m)
     else:
         probs_ui.pretty_print_conditional_probabilities(prob_system.variable_names, prob_system.num_variables, prob_system.get_conditional_probability, n, m)
+
+
+def _print_contingency_table(prob_system: ProbabilitySystem):
+    if hasattr(prob_system, "pretty_print_contingency_table"):
+        prob_system.pretty_print_contingency_table()
+    else:
+        probs_ui.pretty_print_contingency_table(prob_system.variable_names, prob_system.joint_probabilities, prob_system.get_marginal_probability)
 
 
 def _read_single_char():
@@ -941,6 +949,9 @@ def execute_command(prob_system: ProbabilitySystem, query: str):
         return None
     if low == "table":
         _print_joint_table_full(prob_system)
+        return None
+    if low == "contingency_table":
+        _print_contingency_table(prob_system)
         return None
 
     # Entropy command: entropy, entropy(A), entropy(A,B base=2)
