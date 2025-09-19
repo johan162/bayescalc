@@ -1,6 +1,6 @@
 # Classic Sprinkler network: Cloudy influences Sprinkler & Rain; both cause WetGrass (collider for explaining-away demonstration).
 # Sprinkler Network (classic 4-variable BN)
-# Structure: Cloudy -> {Sprinkler, Rain}; {Sprinkler, Rain} -> WetGrass
+# Structure: Cloudy -> (Sprinkler, Rain); (Sprinkler, Rain) -> WetGrass
 # Demonstrates converging connections and explaining patterns of conditional independence:
 #   - Sprinkler ⟂ Rain | Cloudy
 #   - Sprinkler and Rain become (slightly) dependent when conditioning on WetGrass (a collider)
@@ -21,7 +21,7 @@
 variables: Cloudy, Sprinkler, Rain, WetGrass
 
 Cloudy: None
-1: 0.5  # P(Cloudy=1)
+0.5  # P(Cloudy=1)
 
 Sprinkler: Cloudy
 1: 0.1   # P(S=1|C=1)
