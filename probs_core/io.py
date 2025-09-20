@@ -453,18 +453,41 @@ def _load_network_file_multivalued(raw_text: str, variable_names: Optional[List[
     # Validate probability sums per parent combination (must sum to 1.0)
     for child, parent_dict in cpt_entries.items():
         card_child = len(variable_states[child])
-        # build all parent combinations
         plist = parents[child]
         parent_cards = [len(variable_states[p]) for p in plist]
+
         if plist:
             all_parent_assignments = list(itertools.product(*[range(c) for c in parent_cards]))
         else:
             all_parent_assignments = [()]
+
         for pt in all_parent_assignments:
             probs_map = parent_dict.get(pt, {})
-            total_p = sum(probs_map.get(s, 0.0) for s in range(card_child))
-            if abs(total_p - 1.0) > 1e-8:
-                raise ValueError(f"Probabilities for {child} given parents {plist} assignment {pt} sum to {total_p}, not 1.0")
+
+            # Check if all variables are boolean.
+            all_boolean = all(len(states) == 2 for states in variable_states.values())
+
+            if all_boolean and card_child == 2:
+                # Compact CPT logic for boolean variables
+                p0_present = 0 in probs_map
+                p1_present = 1 in probs_map
+
+                if p0_present and p1_present:
+                    # Both provided, check if they sum to 1.0
+                    if abs(probs_map[0] + probs_map[1] - 1.0) > 1e-8:
+                        raise ValueError(f"Probabilities for {child} given parents {plist} assignment {pt} do not sum to 1.0")
+                elif p0_present:
+                    probs_map[1] = 1.0 - probs_map[0]
+                elif p1_present:
+                    probs_map[0] = 1.0 - probs_map[1]
+                else:
+                    raise ValueError(f"Incomplete CPT for {child} given parents {plist} assignment {pt}. Exactly one of P(0|...) or P(1|...) must be specified for boolean networks.")
+            else:
+                # Original logic for non-boolean or mixed networks
+                total_p = sum(probs_map.get(s, 0.0) for s in range(card_child))
+                if abs(total_p - 1.0) > 1e-8:
+                    raise ValueError(f"Probabilities for {child} given parents {plist} assignment {pt} sum to {total_p}, not 1.0")
+
     # Build joint distribution via factorization (enumerate all assignments)
     cards = [len(variable_states[v]) for v in order]
     all_assignments = itertools.product(*[range(c) for c in cards])
