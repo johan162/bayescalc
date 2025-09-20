@@ -13,67 +13,58 @@
 # Costs: MedCost
 
 # Variable declarations (boolean variables implied)
-variable Age
-variable SocioEcon  
-variable GoodStudent
-variable MakeModel
-variable CarValue
-variable Antilock
-variable Airbag
-variable Accident
-variable ThisCarDam
-variable MedCost
+variables: Age, SocioEcon, GoodStudent, MakeModel,CarValue,Antilock,Airbag,Accident,ThisCarDam,MedCost
 
 # Conditional Probability Tables
 
 # Root nodes (no parents)
-Age <- None
-1: 0.3  # P(Age=1)
+Age: None
+0.3  # P(Age=1)
 
-SocioEcon <- None
-1: 0.4  # P(SocioEcon=1)
+SocioEcon: None
+0.4  # P(SocioEcon=1)
 
-MakeModel <- None
-1: 0.2  # P(MakeModel=1)
+MakeModel: None
+.2  # P(MakeModel=1)
 
 # Demographics
-GoodStudent <- (Age)
-(1 | 1): 0.8
-(1 | 0): 0.1
+GoodStudent: Age
+1: 0.8
+0: 0.
 
 # Vehicle characteristics
-CarValue <- (MakeModel)
-(1 | 1): 0.8
-(1 | 0): 0.1
+CarValue: MakeModel
+1: 0.8
+0: 0.1
 
-Antilock <- (MakeModel)
-(1 | 1): 0.95
-(1 | 0): 0.3
+Antilock: MakeModel
+1: 0.95
+0: 0.3
 
-Airbag <- (MakeModel)
-(1 | 1): 0.99
-(1 | 0): 0.5
+Airbag: MakeModel
+1: 0.99
+0: 0.5
 
 # Accidents
-Accident <- (Age, Antilock)
-(1 | 1,1): 0.05
-(1 | 1,0): 0.15
-(1 | 0,1): 0.02
-(1 | 0,0): 0.08
+Accident: Age, Antilock
+11: 0.05
+10: 0.15
+01: 0.02
+00: 0.08
 
-ThisCarDam <- (Accident, CarValue)
-(1 | 1,1): 0.9
-(1 | 1,0): 0.6
-(1 | 0,1): 0.3
-(1 | 0,0): 0.1
+ThisCarDam: Accident, CarValue
+11: 0.9
+10: 0.6
+01: 0.3
+00: 0.1
 
 # Medical costs
-MedCost <- (Accident, Airbag, Age)
-(1 | 1,1,1): 0.2
-(1 | 1,1,0): 0.4
-(1 | 1,0,1): 0.6
-(1 | 1,0,0): 0.8
-(1 | 0,1,1): 0.05
-(1 | 0,1,0): 0.1
-(1 | 0,0,1): 0.15
-(1 | 0,0,0): 0.2
+MedCost: Accident, Airbag, Age
+111: 0.2
+110: 0.4
+101: 0.6
+100: 0.8
+011: 0.05
+010: 0.1
+001: 0.15
+000: 0.2
