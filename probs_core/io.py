@@ -356,7 +356,7 @@ def _load_network_file_multivalued(raw_text: str, variable_names: Optional[List[
         else:
             remaining.append((ln,line))
     if not order:
-        raise ValueError("No variables declared in multi-valued network file")
+        raise ValueError("No variables declared in multi-valued network file. Have you added a ':' by mistake after the 'variable' keyword?")
     if variable_names:
         # Optionally override order subset (must match length)
         if len(variable_names) != len(order):
