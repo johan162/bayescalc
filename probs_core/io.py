@@ -159,8 +159,8 @@ def load_network_file(file_path: str, variable_names: Optional[List[str]] = None
         raise FileNotFoundError(f"File not found: {file_path}")
     with open(file_path, 'r') as f:
         raw = f.read()
-    # Simple detection
-    if ' <- ' in raw or '{' in raw:
+    # Simple detection, this a bit heuristic but should be reliable enough
+    if '<-' in raw and not 'variables:' in raw:
         return _load_network_file_multivalued(raw, variable_names)
     else:
         return _load_network_file_binary(raw, variable_names)
