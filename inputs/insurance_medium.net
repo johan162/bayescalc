@@ -1,0 +1,88 @@
+# Full insurance BN variant: richer demographic/vehicle factors cascading to accident, damage, and medical cost outcomes.
+# Insurance Bayesian Network (27 variables)
+# This is a well-known benchmark network used in Bayesian network research
+# 
+# PURPOSE:
+# The Insurance network models various factors that influence car insurance costs and claims.
+# It considers demographics, driving behavior, vehicle characteristics, and accident scenarios
+# to predict insurance-related outcomes like liability costs, medical costs, and theft risk.
+#
+# VARIABLES (27 total):
+# Demographics: Age, SocioEcon, GoodStudent, RiskAversion
+# Driving: Antilock, DrivingSkill, MakeModel, CarValue, Airbag, DrivQuality
+# Vehicle: VehicleYear, Mileage, HomeBase, AntiTheft
+# Accidents: Accident, ThisCarDam, OtherCarCost, ThisCarCost
+# Medical: Cushioning, MedCost, ILiCost
+# Legal: Propery_Damage, OwnDamage, LibCost, OtherCar
+# Theft: Theft, CarType, SeniorTrain
+# External: RespCoverage
+#
+# The network demonstrates complex dependencies between personal characteristics,
+# vehicle properties, and insurance claim costs, making it useful for testing
+# inference algorithms and probabilistic reasoning systems.
+
+# Variable declarations using the new format
+variable Age
+variable SocioEcon  
+variable VehicleYear
+variable HomeBase
+variable MakeModel
+variable CarValue
+variable CarType
+variable Antilock
+variable Airbag
+variable AntiTheft
+variable Theft
+
+Age <- None
+1: 0.3  # P(Age=1)
+
+SocioEcon <- None
+1: 0.4  # P(SocioEcon=1)
+
+VehicleYear <- None
+1: 0.6
+
+HomeBase <- None
+1: 0.3
+
+MakeModel <- None
+1: 0.2
+
+CarValue <- (MakeModel)
+(1 | 1): 0.8
+(1 | 0): 0.1
+
+CarType <- (MakeModel, CarValue)
+(1 | 1,1): 0.75
+(1 | 1,0): 0.1
+(1 | 0,1): 0.05
+(1 | 0,0): 0.01
+
+Antilock <- (VehicleYear, MakeModel)
+(1 | 1,1): 0.95
+(1 | 1,0): 0.8
+(1 | 0,1): 0.3
+(1 | 0,0): 0.1
+
+Airbag <- (VehicleYear, MakeModel)
+(1 | 1,1): 0.99
+(1 | 1,0): 0.9
+(1 | 0,1): 0.5
+(1 | 0,0): 0.2
+
+AntiTheft <- (HomeBase, CarValue)
+(1 | 1,1): 0.9
+(1 | 1,0): 0.95
+(1 | 0,1): 0.6
+(1 | 0,0): 0.3
+
+Theft <- (AntiTheft, CarType, HomeBase)
+(1 | 1,1,1): 0.01
+(1 | 1,1,0): 0.05
+(1 | 1,0,1): 0.005
+(1 | 1,0,0): 0.01
+(1 | 0,1,1): 0.1
+(1 | 0,1,0): 0.3
+(1 | 0,0,1): 0.02
+(1 | 0,0,0): 0.05

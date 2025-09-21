@@ -1,0 +1,26 @@
+# Alarm network, variant 3 - Boolean-values shortcut format with long variable names
+variable Burglary
+variable Earthquake
+variable Alarm 
+variable JohnCalls 
+variable MaryCalls
+
+Burglary <- None
+1: 0.001
+
+Earthquake <- None  
+1: 0.002
+
+Alarm <- (Burglary, Earthquake)
+(1 | 1,1): 0.95
+(1 | 1,0): 0.94
+(1 | 0,1): 0.29
+(1 | 0,0): 0.001
+
+JohnCalls <- (Alarm)
+(1|1): 0.9
+(1|0): 0.05
+
+MaryCalls <- (Alarm)
+(1|1): 0.7
+(1|0): 0.01

@@ -2,24 +2,38 @@
 # This is the same as "explaining_away_alarm.inp" file
 # Variables (binary, order B,E,A,J,M): Which stands for Burglary, Earthquake, Alarm, JohnCalls, MaryCalls.
 
-variables: B, E, A, J, M
+variable B
+variable E
+variable A
+variable J
+variable M
 
-B : None
-0.001 # P(B)
+B <- None
+1: 0.001 # P(B)
+0: 0.999
 
-E: None
-0.002 # P(E)
+E <- None
+1: 0.002 # P(E)
+0: 0.998
 
-A: B, E
-11: 0.95
-10: 0.94
-01: 0.29
-00: 0.001
+A <- (B, E) # P(A | B,E)
+(1 | 1,1): 0.95  # P(A | B, E)
+(0 | 1,1): 0.05  # P(~A| B, E)
+(1 | 1,0): 0.94  # P(A | B, ~E)
+(0 | 1,0): 0.06  # P(~A| B, ~E)  
+(1 | 0,1): 0.29  
+(0 | 0,1): 0.71
+(1 | 0,0): 0.001
+(0 | 0,0): 0.999
 
-J: A
-1: 0.9
-0: 0.05
+J <- (A) # (A) --> J
+(1|1): 0.9
+(1|0): 0.05
+(0|1): 0.1
+(0|0): 0.95
 
-M: A
-1: 0.7
-0: 0.01
+M <- (A) # (A) --> M
+(1|1): 0.7
+(1|0): 0.01
+(0|1): 0.3
+(0|0): 0.99

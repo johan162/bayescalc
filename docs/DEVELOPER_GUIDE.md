@@ -278,7 +278,7 @@ The `Makefile` provides convenience shortcuts for common workflows. You can alwa
 | `test-all` | Alias: runs `test-slow` then `compile` | Full suite + byte-compilation | Yes | Yes | Ensures code also byte-compiles cleanly |
 | `compile` | `$(PYTHON) -m compileall -q .` | Byte-compile every Python file | N/A | N/A | Catches syntax errors / gross import issues |
 | `regen-readme` | `$(PYTHON) scripts/generate_readme_help.py > README_CLI.md` | Regenerate CLI help snapshot | N/A | N/A | Does not modify main README directly |
-| `inject-readme` | Regenerates then injects help (`--inject README.md --confirm`) | Update README CLI help block | N/A | N/A | Prompts before overwriting sentinel section |
+| `inject-userguide` | Regenerates then injects help (`--inject docs/Userguide.md --confirm`) | Update Userguide CLI help block | N/A | N/A | Prompts before overwriting sentinel section |
 
 ### Environment Variable Override
 `PYTHON` can be overridden when invoking make:

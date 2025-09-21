@@ -1,0 +1,13 @@
+# Classic medical screening example: rare disease (1% prevalence) with 95% sensitivity and 94% specificity i
+# llustrating base-rate effects.
+
+variable Sickness
+variable Test
+
+Sickness <- None
+1: 0.01  # P(Sickness=1)
+
+Test <- (Sickness)
+(1 | 1): 0.95  # P(Test=1|Sickness=1)
+(1 | 0): 0.06  # P(Test=1|Sickness=0)
+

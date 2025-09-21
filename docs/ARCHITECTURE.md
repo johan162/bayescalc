@@ -53,7 +53,7 @@ This project consists of a modular Python core (`probs_core/`), a feature-rich C
 
 - `Makefile` — Convenience targets (`test`, `test-pty`, `test-slow`, `test-sample`, `inject-readme`).
 
-- `DEVELOPER_GUIDE.md` / `CONTRIBUTING.md` — Process and deep-dive references.
+- `docs/DEVELOPER_GUIDE.md` / `CONTRIBUTING.md` — Process and deep-dive references.
 
 ### Migration and Compatibility
 
@@ -183,7 +183,7 @@ Probability display precision is globally managed in `probs_core/formatting.py` 
 3. Wire a CLI command (update handler dispatch, append to `COMMANDS`).
 4. Regenerate & inject README help block (`make inject-readme`).
 5. Add tests at the lowest viable layer.
-6. Update `DEVELOPER_GUIDE.md` and cheat sheet appendix (README) if user-facing.
+6. Update `docs/DEVELOPER_GUIDE.md` and cheat sheet appendix (docs/Userguide.md) if user-facing.
 
 ## Performance Characteristics & Considerations
 The core enumerates the full joint distribution (O(2^N)). Practical limits reached quickly (>18–20 vars). Current mitigations:
@@ -214,11 +214,83 @@ Future optimizations (roadmap candidates):
 * Mutual Information: I(A;B) derived from entropies over marginal and joint distributions.
 
 ## Cross References
-* `README.md` — User concepts, file formats, example networks.
-* `DEVELOPER_GUIDE.md` — Expanded process/workflow & API tables.
+* `README.md` — Concise project overview and quick start guide.
+* `docs/Userguide.md` — Comprehensive user concepts, file formats, example networks.
+* `docs/DEVELOPER_GUIDE.md` — Expanded process/workflow & API tables.
 * `CONTRIBUTING.md` — PR workflow & checklist.
-* `TESTING.md` — (If present) deeper rationale for test layering.
+* `TESTING.md` — Deeper rationale for test layering.
 * API Table Regeneration: run `make api-ref` to refresh the public `ProbabilitySystem` method table below.
+
+## Methodology & Internal Mechanics
+
+This appendix documents how the system parses inputs, constructs internal joint probability tables, and evaluates queries.
+
+### Parsing `.inp` Joint Tables
+
+1. Read `variables:` header (if absent, auto-generate `A,B,C,...`).
+2. Collect lines of the form `<bitpattern>: <float>` (ignoring comments `# ...`).
+3. Detect number of variables `n` from bitpattern length.
+4. Missing Entries Policy:
+  - If exactly one of the 2^n patterns omitted: infer its probability as the residual `1 - sum(provided)` (error if residual < 0).
+  - If more than one omitted: assign zero to all missing patterns (sparse specification).
+5. Normalization:
+  - If total sum within 5% of 1.0, scale all probabilities so the sum is exactly 1.0 (avoids floating drift).
+  - If sum >> 1 (beyond tolerance) -> error.
+6. Store final vector (length 2^n) in row-major order (bitstring interpreted as binary number with leftmost bit as most significant).
+
+### Parsing `.net` Bayesian Network Files
+
+1. Read declared variable set from `variables:` (order preserved for output display; actual block order may differ).
+2. For each variable block:
+  - Parse parent list after `Var:` (or `None`).
+  - Collect CPT lines: pattern -> probability interpreted as `P(Var=1 | parents=pattern)`.
+  - For parentless variables: allow either `1: p` (then `P(Var=0)=1-p`) or `0: q` (then `P(Var=1)=1-q`). If both provided, prefer explicit `1:` and validate consistency.
+3. Validate coverage: must supply all 2^k patterns for k parents; duplicates or missing -> error.
+4. Build factor objects storing parent index list and probability vector for `Var=1` given parents.
+5. Generate joint by iterating all assignments (0..2^n-1): multiply appropriate conditional for each variable (lookup parent bits) to produce unnormalized joint; final normalization ensures exact stochasticity.
+
+### Query Evaluation Pipeline
+
+Supported expression forms (examples): `P(A)`, `P(A,B|C)`, `IsIndep(A,B)`, arithmetic like `P(A)*P(B|C)/P(D)`.
+
+Steps:
+1. Tokenization: recognize identifiers, operators (`+ - * / ( ) , | ~`), reserved keywords (`P`, `IsIndep`, `IsCondIndep`, `Not`).
+2. Parse into an AST distinguishing probability nodes vs arithmetic nodes.
+3. For `P(...)` nodes: decompose argument into (target variables with optional explicit value indicators) and optional condition variables.
+4. Evaluate a probability node by summing relevant joint entries:
+  - Build masks for fixed variables (1 or 0) in numerator.
+  - If conditional: compute numerator sum and divide by denominator sum over conditioning context.
+5. Independence tests:
+  - `IsIndep(X,Y)`: compare `P(X,Y)` with `P(X)P(Y)` under tolerance (e.g. absolute diff < 1e-9 nominal, configurable internally).
+  - `IsCondIndep(X,Y|Z)`: verify for all assignments of Z that `P(X,Y|Z=z)` ≈ `P(X|Z=z) P(Y|Z=z)` (skip contexts with zero support).
+6. Arithmetic nodes: recursively evaluate child expressions to floats then apply operator in left-associative order, respecting parentheses.
+
+### Entropy & Information Computation
+
+Given a variable subset S:
+1. Marginalize joint to S via summing over other axes (implemented by iterating joint once and accumulating into a small array of size 2^{|S|}).
+2. Shannon entropy: `H(S) = -∑ p log_base p` (skip zero probabilities).
+3. Conditional entropy `H(A|B)` derived from joint of `A,B` and marginal of `B` via: `H(A|B)=H(A,B)-H(B)`.
+4. Mutual information `I(A;B) = H(A)+H(B)-H(A,B)`.
+
+### Sampling
+
+1. Precompute cumulative distribution array from joint.
+2. For each sample: draw uniform u in [0,1), binary search cumulative array to find index.
+3. Decode index into bit pattern (variable assignment tuple).
+
+### Performance Considerations
+
+- The system targets small/medium n (demo / teaching). Joint enumeration is O(2^n); practical up to ~18–20 vars depending on usage.
+- Probability queries operate in O(2^n) worst-case but reuse partial computations for repeated marginalization (future optimization: memoization / bitset transforms).
+- Entropy / MI computations share marginalization logic; caching could be added if profiling indicates hotspots.
+
+### Numerical Stability
+
+- All probabilities stored as Python floats; normalization mitigates mild drift.
+- Independence comparisons use absolute tolerance; could be extended to relative tolerance for very small probabilities.
+- Division by zero in conditional probabilities triggers explicit error messages; for odds ratio / relative risk undefined contexts return `None`.
+
 
 <!-- API-TABLE:START -->
 <!-- Generated by scripts/generate_api_reference.py; do not edit manually -->
@@ -246,6 +318,4 @@ Future optimizations (roadmap candidates):
 | `save_to_file` | `(file_path: str)` | instance | Save the joint probabilities and variable names to a file. |
 <!-- API-TABLE:END -->
 
----
-End of Architecture Document.
 

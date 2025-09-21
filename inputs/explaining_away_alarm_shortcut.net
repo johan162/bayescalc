@@ -1,0 +1,26 @@
+# Alarm network, variant 1 - Multi-values variable format with Boolean variables using the shortcut CPT format
+variable B    # Burglery
+variable E    # Earthquake
+variable A    # Alarm
+variable J    # John calls
+variable M    # Mary calls
+
+B <- None
+1: 0.001 # P(B)
+
+E <- None
+1: 0.002 # P(E)
+
+A <- (B, E) 
+(1 | 1,1): 0.95
+(1 | 1,0): 0.94
+(1 | 0,1): 0.29
+(1 | 0,0): 0.001
+
+J <- (A) 
+(1|1): 0.9
+(1|0): 0.05
+
+M <- (A) 
+(1|1): 0.7
+(1|0): 0.01

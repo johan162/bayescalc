@@ -2,7 +2,7 @@
 
 Welcome! This document summarizes how to propose changes, add new computational features, extend the CLI, and test them effectively.
 
-For deeper architectural and API details see: `DEVELOPER_GUIDE.md` (primary reference) and README (user-facing).
+For deeper architectural and API details see: `docs/DEVELOPER_GUIDE.md` (primary reference) and README (user-facing).
 
 ---
 ## 1. Environment Setup
@@ -22,7 +22,7 @@ pip install -r requirements-dev.txt  # (optional) linters, type-checkers
 | `tests/` | Unit, batch (`--cmds`), PTY tests |
 | `inputs/` | Example `.inp` & `.net` model files |
 | `DEVELOPER_GUIDE_NEW.md` | In-depth developer reference |
-| `README.md` | User documentation & examples |
+| `docs/Userguide.md` | Comprehensive user documentation & examples |
 
 Add new computational logic inside `probs_core/` (ideally pure functions in `stats.py` first). Keep CLI-only concerns out of the core.
 
