@@ -63,10 +63,10 @@ marginals
 networks net
 ```
 
-Tip: Use `--cmds` for batch mode, e.g.:
-```bash
-python bayescalc.py inputs/medical_test.inp --cmds "P(Sickness|Test);marginals;exit"
-```
+> [!TIP] Use `--cmds` for batch mode, e.g.:
+> ```bash
+> python bayescalc.py inputs/medical_test.inp --cmds "P(Sickness|Test);marginals;exit"
+> ```
 
 ## Command Line Usage (Quick Reference)
 
@@ -95,7 +95,7 @@ Examples:
   python bayescalc.py    # interactive (manual input prompt)
   python bayescalc.py inputs/medical_test.inp
   python bayescalc.py inputs/medical_test.inp --names Sickness Test
-    python bayescalc.py --help
+  python bayescalc.py --help
 ```
 
 Non-interactive batch example (run specified commands then quit):
