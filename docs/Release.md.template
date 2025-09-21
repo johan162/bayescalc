@@ -1,0 +1,41 @@
+# Release Notes for v1.1.0 (since v1.0.0)
+
+## Summary
+
+## ✨  New Features
+
+**Multi-value variables**
+The calculator now supports multi-value variables. The updated `*.net` format has a new variable definition format
+
+```tex
+variable VARIABLE_NAME1 {STATE1, STATE2, STATE3, ...}
+variable VARIABLE_NAME2 {STATE1, STATE2, STATE3, ...}
+variable VARIABLE_NAME3 {STATE1, STATE2, STATE3, ...}
+...
+```
+
+See new example networks.
+
+
+The multi
+
+## 🚀 Improvements
+
+**Documentation restructure**
+The documentation is now stored under `docs/` directory and have a newly written "User Guide".
+
+**More example BN**
+Additional example of Bayesian Networks are included under the `inputs/` directory
+
+## 🐛 Bug Fixes
+- None (no-reported bugs)
+
+## 🛠  Build system
+- Renamed main entry point to `bayescalc.py`
+
+
+## 📚 Documentation
+- Major rehaul
+
+
+**Full Changelog**: https://github.com/johan162/bayescalc/compare/v1.0.0...v1.1.0
