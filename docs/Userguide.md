@@ -266,8 +266,8 @@ variables: Sickness, Test
 The `.net` format defines probability distributions through conditional probability tables (CPTs) in a Bayesian network structure.
 There are two variants of allowed input file
 
-  1. For multi-valued variables (also works for Boolean)
-  2. A simplified format for boolean variables (**does NOT** work for multi-values variables)
+  1. For multi-valued variables (also works for Boolean). For a Boolean only network a shorcut format exists that replaces the simplified format for boolean variables that used a slightly different synta,
+  2. (Deprecated) A simplified format for boolean variables (**does NOT** work for multi-values variables)
 
 The enhanced `.net` format allows each variable to have an arbitrary discrete state space instead of assuming all variables are binary.
 
@@ -299,12 +299,15 @@ Key elements:
 
 #### Structure
 ```
-variables: Var1, Var2, Var3, ...
-Child: Parent1, Parent2, ...   # or 'Child: None' if no parents
+variable Var1 {state1, staet2, ...}
+variable Var2 {state1, staet2, ...}
+variable Var3 {state1, staet2, ...}
+Child <-> (Parent1, Parent2, ...)   # or 'Child: None' if no parents
 <CPT lines>
 ```
 
 Rules:
+- If states are left out then the variable is assumed to be boolean
 - Exactly one block per variable, order of blocks can be arbitrary but all declared variables must appear.
 - Parentless variable block uses one line either `1: p` (interpreted as P(X=1)=p) or `0: q` (interpreted as P(X=0)=q, so P(X=1)=1-q).
 - For a variable with k parents, provide 2^k lines, one per parent bit pattern (in the order parents are listed) giving `pattern: p` meaning P(child=1 | parents=pattern).
@@ -316,6 +319,8 @@ Rules:
 
 
 #### EXAMPLE 1: - Five Boolean variables in *.net files using the multi-value syntax
+
+See: [explaining_away_alarm.net](../inputs/explaining_away_alarm.net)
 
 All cihld/parent states are explicitly specified. 
 
@@ -377,8 +382,90 @@ print(ps.get_marginal_probability([0],[1]))  # P(B=1)
 - **Conditional Tables**: Each pattern specifies P(Variable=1|Parents=pattern)
 - **Complete Coverage**: Must specify probabilities for all parent combinations
 
+#### EXAMPLE 2: - Five Boolean variables in *.net files using the multi-value syntax
 
-#### EXAMPLE 2: - Five Boolean variables in *.net files using the binary-value syntax
+See: [explaining_away_alarm_shortcut.net](../inputs/explaining_away_alarm_shortcut.net)
+
+The shortcurt format for boolean only networks, this cuts the size of the CPT tables in half
+as you only have to specify either all truth or all false values for the child and not a full
+both true and false entries.
+
+```txt
+# Alarm network, variant 1 - Multi-values variable format with Boolean variables
+variable B    # Burglery
+variable E    # Earthquake
+variable A    # Alarm
+variable J    # John calls
+variable M    # Mary calls
+
+B <- None
+1: 0.001 # P(B)
+
+E <- None
+1: 0.002 # P(E)
+
+A <- (B, E) 
+(1 | 1,1): 0.95
+(1 | 1,0): 0.94
+(1 | 0,1): 0.29
+(1 | 0,0): 0.001
+
+J <- (A) 
+(1|1): 0.9
+(1|0): 0.05
+
+M <- (A) 
+(1|1): 0.7
+(1|0): 0.01
+
+```
+
+**Key Features:**
+- **Variable Declaration**: Defines all variables in display order in one line
+- **Parent Specification**: Lists parents for each variable (or `None` for roots)
+- **CPT for True values only:** Only the rows in the CPT for the true value needs to be specified
+- **Complete Coverage Autocalculated**: Missing values are automatically calculated 
+
+
+#### Example 3: Five variable Alarm Network with long variable names using the binary-value syntax
+
+See: [explaining_away_alarm_shortcut_long_names.net](../inputs/explaining_away_alarm_shortcut_long_names.net)
+
+This is again he same example as before but this time with long variable names
+
+```
+# Alarm network, variant 3 - Boolean-values shortcut format with long variable names
+variable Burglary
+variable Earthquake
+variable Alarm 
+variable JohnCalls 
+variable MaryCalls
+
+Burglary <- None
+1: 0.001
+
+Earthquake <- None  
+1: 0.002
+
+Alarm <- (Burglary, Earthquake)
+(1 | 1,1): 0.95
+(1 | 1,0): 0.94
+(1 | 0,1): 0.29
+(1 | 0,0): 0.001
+
+JohnCalls <- (Alarm)
+(1|1): 0.9
+(1|0): 0.05
+
+MaryCalls <- (Alarm)
+(1|1): 0.7
+(1|0): 0.01
+```
+
+#### **DEPRECATED** EXAMPLE 4: - Five Boolean variables in *.net files using the binary-value syntax
+
+> [!WARNING]
+> This format is deprecated and support will be removed in v2.0.0
 
 For boolean only network a simplified `*.net` file can be made. Again the same example as previously
 but this time we can use that all variables are boolean and use the simplified format:
@@ -408,52 +495,10 @@ M: A
 0: 0.01
 ```
 
-**Key Features:**
-- **Variable Declaration**: Defines all variables in display order in one line
-- **Parent Specification**: Lists parents for each variable (or `None` for roots)
-- **CPT for True values only:** Only the rows in the CPT for the true value needs to be specified
-- **Complete Coverage Autocalculated**: Missing values are automatically calculated 
-
-> [!TIP]
-> For boolean variable networks either style can be used but the binary syntax requires a lot less input
-
-
-#### Example 3: Five variable Alarm Network with long variable names using the binary-value syntax
-
-This is again he same example as before but this time with long variable names
-
-```
-# Alarm network, variant 2 - Boolean-value long variables 
-variables: Burglary, Earthquake, Alarm, JohnCalls, MaryCalls
-
-Burglary:
-parents: None
-1: 0.001
-
-Earthquake:
-parents: None  
-1: 0.002
-
-Alarm:
-parents: Burglary, Earthquake
-00: 0.001   # P(Alarm=1|B=0,E=0)
-01: 0.290   # P(Alarm=1|B=0,E=1) 
-10: 0.940   # P(Alarm=1|B=1,E=0)
-11: 0.950   # P(Alarm=1|B=1,E=1)
-
-JohnCalls:
-parents: Alarm
-0: 0.050    # P(JohnCalls=1|Alarm=0)
-1: 0.900    # P(JohnCalls=1|Alarm=1)
-
-MaryCalls:
-parents: Alarm
-0: 0.010    # P(MaryCalls=1|Alarm=0)
-1: 0.700    # P(MaryCalls=1|Alarm=1)
-```
-
 > [!IMPORTANT]
-> The child value is always implicitly assumed to be "True" when using binary format.
+> The child value is always implicitly assumed to be "True" when using the binary format.
+
+
 
 ### Multi-Valued Variables
 
@@ -534,6 +579,8 @@ After the script have been started it will enter a "Read-Evaluate-Print-Loop" (R
 The following sectino gives a few examples
 
 ### Basic Probability Queries
+
+The followinbg examples assume Boolean variables for simplicity
 
 #### Marginal Probabilities
 ```bash
@@ -1431,7 +1478,7 @@ P(Cancer|Smoking=0)              # Risk in unexposed group
 | List examples | `networks` | Browse available files |
 | Show probabilities | `marginals` | Overview of distribution |
 | Show joint table | `joint_table` | Complete enumeration |
-| Show contingency table | `contingency_table` | Prints full contingency table up to four variables |
+| Show contingency table | `contingency_table` | Prints full contingency table up to four variables (using partitions) |
 | Test all pairs | `independence` | Dependency structure |
 | Save distribution | `save output.inp` | Export current state |
 | Set precision | `precision 6` | Control display format |
