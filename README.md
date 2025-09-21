@@ -93,11 +93,10 @@ Examples:
   python bayescalc.py    # interactive (manual input prompt)
   python bayescalc.py inputs/medical_test.inp
   python bayescalc.py inputs/medical_test.inp --names Sickness Test
-  python bayescalc.py inputs/weather_picnic.net --cmds "P(Weather=Sunny);entropy;exit"
-  python bayescalc.py --help
+    python bayescalc.py --help
 ```
 
-Non-interactive batch example (run commands then quit):
+Non-interactive batch example (run specified commands then quit):
 ```bash
   python bayescalc.py inputs/medical_test.inp --cmds "P(Sickness|Test);odds_ratio(Sickness,Test);exit"
 ```
@@ -107,6 +106,8 @@ Non-interactive batch example (run commands then quit):
 ## Example networks
 
 Run `networks` (or `networks net` / `networks inp`) to list all included models with descriptions. 
+
+In the current version around 20 example networks are included
 
 ```bash
   python bayescalc.py inputs/medical_test.inp --cmds "networks;exit"
@@ -160,3 +161,4 @@ Some final examples will give a sense of what can be calculated (this is not an 
 11. `P(~A) + P(B|~C)` — Combine negation and conditional queries in arithmetic expressions.
 12. `cond_probs(1,2)` - Print a table of all possible combinations of `P(X1=x1|X2=x2,X3=x3)`
 13. `marginals` - Print a table of all marginal probabilitites
+14. `contingency_table` - Print the contigency table (supports up to four variables)
