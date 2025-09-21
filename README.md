@@ -5,13 +5,15 @@ Interactive Bayesian network analysis for learning, teaching, and quick “back�
 
 ## Overview
 
-BayesCalc is a command‑line tool and Python library for exploring joint and conditional probabilities over Bayesian networks. Load a model, ask questions like `P(Disease|Test)` or `IsCondIndep(A,B|C)`, and get immediate answers. Use it interactively, via CLI batch commands, or as a library.
-In terms of system size there is no hard upper limit but in practice given the speed of Python and the naive implementation there is a practical limit with around 15 variables for Boolean systems and 7-10 multi-valued variables depending on the specific cardinality.
+BayesCalc is a bsic command‑line tool and Python library for exploring joint and conditional probabilities over Bayesian networks. Load a model, ask questions like `P(Disease|Test)` or `IsCondIndep(A,B|C)`, and get immediate numerical answers. Use it interactively, via CLI batch commands, or as a library.
+In terms of system size there is no hard upper limit but in practice given the speed of Python and the naive implementation (it calcuates the full JPT and does not employ more advanced techniques such as  Gibbs sampling) there is a practical limit with around ~10-15 variables for Boolean systems and 7-10 variables for multi-valued networks depending on the specific cardinality.
+
+This is primarily a basic tool for learning and teaching and in that context the practical size limitations are not a problem.
 
 Quick links:
 | Doc | Description |
 |-----|-------------|
-| **[User Guide](docs/Userguide.md)**  | Complete tutorial and reference |
+| **[User Guide](docs/Userguide.md)**  | Tutorial and reference |
 | **[ Developer Guide](docs/DEVELOPER_GUIDE.md)** |  Organization of code and how to add features |
 | **[ Technical Details](docs/ARCHITECTURE.md)** | Implementation specifics and architecture |
 | **[ Contributing](CONTRIBUTING.md)** | How to contribute |
