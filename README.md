@@ -54,7 +54,7 @@ Then the question is; If you get a test result that indicates you have the disea
 
 
 ```bash
-python probs.py inputs/medical_test.inp
+python bayescalc.py inputs/medical_test.inp
 # Try:
 P(Sickness|Test)
 marginals
@@ -63,7 +63,7 @@ networks net
 
 Tip: Use `--cmds` for batch mode, e.g.:
 ```bash
-python probs.py inputs/medical_test.inp --cmds "P(Sickness|Test);marginals;exit"
+python bayescalc.py inputs/medical_test.inp --cmds "P(Sickness|Test);marginals;exit"
 ```
 
 ## Command Line Usage (Quick Reference)
@@ -90,16 +90,16 @@ Optional arguments:
 Examples:
 
 ```bash
-  python probs.py    # interactive (manual input prompt)
-  python probs.py inputs/medical_test.inp
-  python probs.py inputs/medical_test.inp --names Sickness Test
-  python probs.py inputs/weather_picnic.net --cmds "P(Weather=Sunny);entropy;exit"
-  python probs.py --help
+  python bayescalc.py    # interactive (manual input prompt)
+  python bayescalc.py inputs/medical_test.inp
+  python bayescalc.py inputs/medical_test.inp --names Sickness Test
+  python bayescalc.py inputs/weather_picnic.net --cmds "P(Weather=Sunny);entropy;exit"
+  python bayescalc.py --help
 ```
 
 Non-interactive batch example (run commands then quit):
 ```bash
-  python probs.py inputs/medical_test.inp --cmds "P(Sickness|Test);odds_ratio(Sickness,Test);exit"
+  python bayescalc.py inputs/medical_test.inp --cmds "P(Sickness|Test);odds_ratio(Sickness,Test);exit"
 ```
 
 
@@ -109,7 +109,7 @@ Non-interactive batch example (run commands then quit):
 Run `networks` (or `networks net` / `networks inp`) to list all included models with descriptions. 
 
 ```bash
-  python probs.py inputs/medical_test.inp --cmds "networks;exit"
+  python bayescalc.py inputs/medical_test.inp --cmds "networks;exit"
 ```
 
 A few highlights:
